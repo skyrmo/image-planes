@@ -1,5 +1,5 @@
 {
-    "name": "image-planes-webgpu",
+    "name": "image-planes",
     "version": "0.1.0",
     "description": "WebGPU image planes that track DOM elements. Bring your own animation.",
     "type": "module",
