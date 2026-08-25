@@ -1,4 +1,4 @@
-# webgpu-image-planes
+# image-planes-webgpu
 
 WebGPU image planes that track DOM elements. **Bring your own animation library.**
 
@@ -7,13 +7,13 @@ Zero runtime dependencies. ESM only. ~13 KB built.
 ## Install
 
 ```bash
-npm install webgpu-image-planes
+npm install image-planes-webgpu
 ```
 
 ## Quick start
 
 ```ts
-import { ImagePlanes } from "webgpu-image-planes";
+import { ImagePlanes } from "image-planes-webgpu";
 
 const scene = new ImagePlanes(canvasEl, {
     lerp: 0.12, // optional bounds smoothing (1 = exact follow, <1 = damped chase)
@@ -53,7 +53,7 @@ hold a reference to it and tween its fields directly. `detach()` hands you
 ownership of bounds; `attach()` gives it back to the DOM tracker.
 
 ```ts
-import { rectFromElement } from "webgpu-image-planes";
+import { rectFromElement } from "image-planes-webgpu";
 
 plane.detach(); // you own bounds now — the render loop stops tracking
 

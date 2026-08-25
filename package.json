@@ -1,11 +1,13 @@
 {
-    "name": "webgpu-image-planes",
+    "name": "image-planes-webgpu",
     "version": "0.1.0",
     "description": "WebGPU image planes that track DOM elements. Bring your own animation.",
     "type": "module",
     "license": "MIT",
     "sideEffects": false,
-    "files": ["dist"],
+    "files": [
+        "dist"
+    ],
     "exports": {
         ".": {
             "types": "./dist/src/index.d.ts",
