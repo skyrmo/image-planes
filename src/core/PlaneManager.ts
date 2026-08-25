@@ -1,6 +1,7 @@
 import { WebGPUCore } from "./WebGPUCore";
 import { Renderer, UNIFORM_FLOATS } from "./Renderer";
-import type { PlaneFit, PlaneRecord } from "../types";
+import type { PlaneFit } from "../types";
+import type { PlaneRecord } from "./records";
 
 // Below this distance (CSS px) a damped bound snaps to its target, so the
 // dirty flag can reach "converged" instead of asymptoting forever.

@@ -1,7 +1,7 @@
 import vertexShaderSource from "../shaders/vertex.wgsl?raw";
 import fragmentShaderSource from "../shaders/fragment.wgsl?raw";
 import { WebGPUCore } from "./WebGPUCore";
-import type { PlaneRecord } from "../types";
+import type { PlaneRecord } from "./records";
 
 // vec4f rect + f32 opacity + vec2f fitScale, padded to 16-byte struct alignment.
 export const UNIFORM_SIZE = 32;

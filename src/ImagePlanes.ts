@@ -4,13 +4,18 @@ import { TextureManager } from "./core/TextureManager";
 import { PlaneManager } from "./core/PlaneManager";
 import { ImagePlane } from "./core/Plane";
 import { rectFromElement } from "./core/util";
-import type { AddPlaneOptions, ImagePlanesOptions, PlaneRecord, PlaneSource } from "./types";
+import type { AddPlaneOptions, ImagePlanesOptions, PlaneSource } from "./types";
+import type { PlaneRecord } from "./core/records";
 
 const FRAME_MS = 1000 / 60;
 
 export type BeforeRenderCallback = (time: number) => void;
 
-// A scene of WebGPU image planes drawn on a full-viewport fixed canvas. each tracking a DOM element. Bring your own animation.
+/**
+ * A scene of WebGPU image planes drawn on a full-viewport fixed canvas, each
+ * tracking a DOM element. Bring your own animation: tick GSAP/Lenis/etc. in an
+ * `onBeforeRender` hook and tween plane handles directly.
+ */
 export class ImagePlanes {
     private canvas: HTMLCanvasElement;
     private core: WebGPUCore;
@@ -26,7 +31,7 @@ export class ImagePlanes {
     private needRender = true;
     private nextAutoId = 0;
 
-    // Scene-wide bounds smoothing for tracked planes (1 = exact follow).
+    /** Scene-wide bounds smoothing for tracked planes (1 = exact follow). */
     lerp: number;
 
     private handleResize = () => {

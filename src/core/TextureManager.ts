@@ -1,6 +1,7 @@
 import { WebGPUCore } from "./WebGPUCore";
 import { waitForImageReady } from "./util";
-import type { ManagedTexture, PlaneSource } from "../types";
+import type { PlaneSource } from "../types";
+import type { ManagedTexture } from "./records";
 
 export class TextureManager {
     private core: WebGPUCore;

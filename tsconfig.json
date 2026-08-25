@@ -12,6 +12,7 @@
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
+        "stripInternal": true,
         "allowArbitraryExtensions": true,
 
         /* Linting — matches the app's tsconfig */

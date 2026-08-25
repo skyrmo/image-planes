@@ -1,7 +1,11 @@
-import type { PlaneRecord, PlaneSource, Rect } from "../types";
+import type { PlaneSource, Rect } from "../types";
+import type { PlaneRecord } from "./records";
 
-/** Internal operations a plane handle needs from its scene. */
-export interface PlaneOps {
+/**
+ * Operations a plane handle needs from its scene.
+ * @internal — not part of the public API; stripped from the emitted .d.ts.
+ */
+interface PlaneOps {
     loadTexture(record: PlaneRecord, source: PlaneSource): Promise<void>;
     removeRecord(id: number): void;
 }
@@ -19,6 +23,7 @@ export class ImagePlane {
     private ops: PlaneOps;
     private readyPromise: Promise<void>;
 
+    /** @internal Constructed by `ImagePlanes.addPlane`, never directly. */
     constructor(record: PlaneRecord, ops: PlaneOps, ready: Promise<void>) {
         this.record = record;
         this.ops = ops;
