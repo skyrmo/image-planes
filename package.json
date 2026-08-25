@@ -1,0 +1,25 @@
+{
+    "name": "webgpu-image-planes",
+    "version": "0.1.0",
+    "description": "WebGPU image planes that track DOM elements. Bring your own animation.",
+    "type": "module",
+    "license": "MIT",
+    "sideEffects": false,
+    "files": ["dist"],
+    "exports": {
+        ".": {
+            "types": "./dist/src/index.d.ts",
+            "import": "./dist/image-planes.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@webgpu/types": "^0.1.71",
+        "typescript": "~6.0.2",
+        "vite": "^8.1.1",
+        "vite-plugin-dts": "^4.5.4"
+    }
+}
