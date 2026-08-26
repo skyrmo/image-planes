@@ -28,3 +28,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Local design notes — not part of the published package or the repo history.
+docs
