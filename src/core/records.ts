@@ -1,5 +1,5 @@
 import type { PlaneFit, Rect } from "../types";
-import type { ImagePlane } from "./Plane";
+import type { ImagePlane } from "./ImagePlane";
 
 /** Internal types that use WebGPU handles.
  *  Deliberately kept out of `types.ts` (which the public entry point imports)

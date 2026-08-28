@@ -79,7 +79,7 @@ export class Renderer {
         });
     }
 
-    renderAll(planes: Iterable<PlaneRecord>): void {
+    renderAll(planeRecords: Iterable<PlaneRecord>): void {
         const encoder = this.device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
             colorAttachments: [
@@ -94,10 +94,10 @@ export class Renderer {
 
         pass.setPipeline(this.pipeline);
 
-        for (const plane of planes) {
-            if (!plane.bindGroup) continue; // texture not ready yet
-            if (plane.bounds.width <= 0 || plane.bounds.height <= 0) continue;
-            pass.setBindGroup(0, plane.bindGroup);
+        for (const record of planeRecords) {
+            if (!record.bindGroup) continue; // texture not ready yet
+            if (record.bounds.width <= 0 || record.bounds.height <= 0) continue;
+            pass.setBindGroup(0, record.bindGroup);
             pass.draw(4);
         }
 

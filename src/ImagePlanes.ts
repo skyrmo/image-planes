@@ -1,7 +1,7 @@
 import { configureCanvas, initWebGPU } from "./core/gpu";
 import { Renderer } from "./core/Renderer";
 import { TextureManager } from "./core/TextureManager";
-import { ImagePlane } from "./core/Plane";
+import { ImagePlane } from "./core/ImagePlane";
 import { PlaneManager } from "./core/PlaneManager";
 import { rectFromElement } from "./core/util";
 import type { PlaneRecord } from "./core/records";

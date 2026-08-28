@@ -9,12 +9,6 @@ export class TextureManager {
         this.device = device;
     }
 
-    /** Resolve any supported source to an ImageBitmap, then upload it. */
-    async load(source: PlaneSource): Promise<ManagedTexture> {
-        const bitmap = await this.toBitmap(source);
-        return this.createTexture(bitmap);
-    }
-
     /** Resolve any supported source to an ImageBitmap. */
     private async toBitmap(source: PlaneSource): Promise<ImageBitmap> {
         if (source instanceof ImageBitmap) return source;
@@ -34,6 +28,12 @@ export class TextureManager {
         }
 
         return createImageBitmap(source);
+    }
+
+    /** Resolve any supported source to an ImageBitmap, then upload it. */
+    async load(source: PlaneSource): Promise<ManagedTexture> {
+        const bitmap = await this.toBitmap(source);
+        return this.createTexture(bitmap);
     }
 
     createTexture(bitmap: ImageBitmap): ManagedTexture {
