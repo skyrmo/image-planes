@@ -13,17 +13,11 @@ npm install image-planes
 ## Quick start
 
 ```ts
-import { ImagePlanes, WebGPUUnsupportedError } from "image-planes";
+import { ImagePlanes } from "image-planes";
 
-let scene: ImagePlanes;
-try {
-    scene = await ImagePlanes.create(canvasEl, {
-        damping: 0.88, // optional smoothing; 0 (default) follows exactly
-    });
-} catch (error) {
-    if (error instanceof WebGPUUnsupportedError) return; // keep the native <img>s
-    throw error;
-}
+let scene: ImagePlanes = await ImagePlanes.create(canvasEl, {
+    damping: 0.88, // optional smoothing; 0 (default) follows exactly
+});
 
 // Planes anchor to DOM elements. If the element is an <img>, its already-decoded
 // pixels are used directly — no re-fetch.
