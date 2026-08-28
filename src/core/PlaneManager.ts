@@ -18,12 +18,7 @@ export class PlaneManager {
         this.renderer = renderer;
     }
 
-    createRecord(
-        id: number,
-        trackedEl: HTMLElement,
-        fit: PlaneFit,
-        lerp: number | null,
-    ): PlaneRecord {
+    createRecord(id: number, trackedEl: HTMLElement, fit: PlaneFit): PlaneRecord {
         const record: PlaneRecord = {
             id,
             texture: null,
@@ -32,9 +27,8 @@ export class PlaneManager {
             bounds: { x: 0, y: 0, width: 0, height: 0 },
             opacity: 1,
             trackedEl,
-            trackBounds: true,
+            tracking: true,
             fit,
-            lerp,
             texAspect: 1,
             ready: false,
             seeded: false,
@@ -66,31 +60,33 @@ export class PlaneManager {
      * Track bounds + write changed uniforms. Returns true when anything
      * changed this frame (the dirty flag that gates the GPU submit).
      */
-    update(dtRatio: number, sceneLerp: number): boolean {
+    update(dtRatio: number, damping: number): boolean {
         const device = this.core.getDevice();
+        // Public `damping` counts up from 0 (= follow exactly); the internal
+        // coefficient is the fraction of the gap closed per 60Hz frame. The
+        // floor keeps a damping of ~1 from stalling completely.
+        const k = Math.max(1 - damping, 0.01);
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         let dirty = false;
 
         for (const record of this.records.values()) {
-            // While tracking, follow the DOM anchor each frame. When a flight is
-            // in progress (trackBounds === false) the consumer owns bounds, so
-            // leave them alone.
-            if (record.trackBounds && record.trackedEl) {
+            // While tracking, follow the DOM anchor each frame. Once untracked
+            // the consumer owns bounds, so leave them alone.
+            if (record.tracking && record.trackedEl) {
                 const rect = record.trackedEl.getBoundingClientRect();
                 const b = record.bounds;
-                const k = record.lerp ?? sceneLerp;
 
                 // Snap while unseeded or undrawn so the first visible frame is
                 // exact; damp otherwise (the scroll-follow jitter fix).
-                if (!record.seeded || !record.ready || k >= 1) {
+                if (!record.seeded || !record.ready || damping <= 0) {
                     b.x = rect.x;
                     b.y = rect.y;
                     b.width = rect.width;
                     b.height = rect.height;
                     record.seeded = true;
                 } else {
-                    const a = 1 - Math.pow(1 - Math.max(k, 0.01), dtRatio);
+                    const a = 1 - Math.pow(1 - k, dtRatio);
                     b.x += (rect.x - b.x) * a;
                     b.y += (rect.y - b.y) * a;
                     b.width += (rect.width - b.width) * a;
@@ -154,6 +150,18 @@ export class PlaneManager {
         }
 
         return dirty;
+    }
+
+    /**
+     * Move a plane to the end of the iteration order, so it paints over every
+     * other plane. `Map` preserves insertion order, so re-inserting is O(1)
+     * and needs no sort or stored depth.
+     */
+    bringToFront(id: number): void {
+        const record = this.records.get(id);
+        if (!record) return;
+        this.records.delete(id);
+        this.records.set(id, record);
     }
 
     getRecord(id: number): PlaneRecord | undefined {

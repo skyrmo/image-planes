@@ -1,3 +1,5 @@
+import { WebGPUInitError, WebGPUUnsupportedError } from "./errors";
+
 export class WebGPUCore {
     private device: GPUDevice | null = null;
     private adapter: GPUAdapter | null = null;
@@ -13,20 +15,26 @@ export class WebGPUCore {
 
         this.canvas = canvas;
 
+        // No navigator.gpu and no adapter both mean "this machine can't" —
+        // the graceful degradation path. Everything below them is a real fault.
         if (!navigator.gpu) {
-            throw new Error("WebGPU is not supported in this browser");
+            throw new WebGPUUnsupportedError("WebGPU is not available in this browser");
         }
 
         this.adapter = await navigator.gpu.requestAdapter();
         if (!this.adapter) {
-            throw new Error("Failed to get GPU adapter");
+            throw new WebGPUUnsupportedError("No WebGPU adapter is available on this machine");
         }
 
-        this.device = await this.adapter.requestDevice();
+        try {
+            this.device = await this.adapter.requestDevice();
+        } catch (cause) {
+            throw new WebGPUInitError("Failed to create a WebGPU device", { cause });
+        }
 
         this.context = canvas.getContext("webgpu");
         if (!this.context) {
-            throw new Error("Failed to get WebGPU context");
+            throw new WebGPUInitError("The canvas would not return a \"webgpu\" context");
         }
 
         this.canvasFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -34,6 +42,7 @@ export class WebGPUCore {
         this.configureContext();
     }
 
+    /** Configures the WebGPU context for the canvas. Also used upon window resize. */
     configureContext(): void {
         if (!this.context || !this.device || !this.canvas) return;
 

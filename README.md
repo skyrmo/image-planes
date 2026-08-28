@@ -13,12 +13,18 @@ npm install image-planes
 ## Quick start
 
 ```ts
-import { ImagePlanes } from "image-planes";
+import { ImagePlanes, WebGPUUnsupportedError } from "image-planes";
 
 const scene = new ImagePlanes(canvasEl, {
-    lerp: 0.12, // optional bounds smoothing (1 = exact follow, <1 = damped chase)
+    damping: 0.88, // optional smoothing; 0 (default) follows exactly
 });
-await scene.init(); // rejects if WebGPU is unavailable
+
+try {
+    await scene.init();
+} catch (error) {
+    if (error instanceof WebGPUUnsupportedError) return; // keep the native <img>s
+    throw error;
+}
 
 // Planes anchor to DOM elements. If the element is an <img>, its already-decoded
 // pixels are used directly — no re-fetch.
@@ -34,7 +40,8 @@ scene.start();
 ```
 
 The canvas must be a full-viewport fixed layer — plane positions are computed
-against the viewport:
+against the viewport, and the canvas is sized from it. `init()` warns to the
+console if the canvas isn't positioned this way:
 
 ```css
 canvas {
@@ -46,25 +53,32 @@ canvas {
 }
 ```
 
-## Animating a plane ("flight")
+## Animating a plane
 
 `plane.bounds` is a **stable object mutated in place**, so animation libraries can
-hold a reference to it and tween its fields directly. `detach()` hands you
-ownership of bounds; `attach()` gives it back to the DOM tracker.
+hold a reference to it and tween its fields directly. `untrack()` stops the render
+loop following the DOM, leaving `bounds` yours to animate; `track()` hands it back.
 
 ```ts
 import { rectFromElement } from "image-planes";
 
-plane.detach(); // you own bounds now — the render loop stops tracking
+plane.untrack(); // you own bounds now — the render loop stops following the DOM
+plane.bringToFront(); // draw it over everything else while it moves
 
-gsap.timeline({ onComplete: () => plane.attach(targetEl) })
+const tween = gsap
+    .timeline({ onComplete: () => plane.track(targetEl) })
     .to(plane.bounds, { ...rectFromElement(targetEl), duration: 0.9 })
     .to(otherPlane, { opacity: 0 }, 0);
 ```
 
-`attach(el)` optionally re-anchors to a _different_ element than the one the plane
+`track(el)` optionally re-anchors to a _different_ element than the one the plane
 started on — which is how an image "moves" from a gallery thumbnail to an article
-header and then tracks the new element on scroll.
+header and then follows the new element on scroll.
+
+> **Kill your tween before re-tracking.** `plane.bounds` is the same object for the
+> plane's whole life, so if you call `track()` while an animation is still writing
+> to it, the animation and the render loop will both write it every frame and the
+> plane will visibly fight itself. On an interrupted flight, `tween.kill()` first.
 
 ## Notes
 
@@ -74,10 +88,25 @@ header and then tracks the new element on scroll.
 - **`addPlane` returns synchronously**, but the plane isn't drawn until its texture
   uploads (`await plane.ready`). Keep the native `<img>` visible until then and it
   doubles as the placeholder.
-- **No WebGPU?** `scene.init()` rejects — keep your native images visible and skip
-  the GPU layer entirely. The page should work without it.
+- **Draw order is the order planes were added.** There's no depth buffer and no
+  z-index — later planes paint over earlier ones. `plane.bringToFront()` moves one
+  to the top.
+- **No WebGPU?** `scene.init()` rejects with `WebGPUUnsupportedError` — keep your
+  native images visible and skip the GPU layer entirely. The page should work
+  without it. A `WebGPUInitError` means WebGPU exists but setup failed, which is a
+  real fault rather than an unsupported browser.
 - **Frame-rate independent smoothing.** The damped chase is exponential and scaled
-  by delta time, so `lerp` behaves the same at 60Hz and 120Hz.
+  by delta time, so `damping` behaves the same at 60Hz and 120Hz. Hooks receive the
+  clamped frame delta as a second argument (`(time, dt) => …`) if you want the same
+  protection for your own state.
+- **Planes have no id.** The handle returned by `addPlane` is the only way to refer
+  to one; `scene.planes` lists them in draw order.
+
+## Contributing
+
+[ARCHITECTURE.md](./ARCHITECTURE.md) explains the internals — data flow, the
+render loop, and the coordinate math. [CONTEXT.md](./CONTEXT.md) is the glossary,
+and [docs/adr/](./docs/adr/) records why the load-bearing decisions were made.
 
 ## License
 

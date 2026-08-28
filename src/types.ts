@@ -9,10 +9,11 @@ export type PlaneSource = string | Blob | HTMLImageElement | ImageBitmap;
 
 export interface ImagePlanesOptions {
     /**
-     * Bounds smoothing for DOM-tracked planes.
-     * 1 = exact follow (default), <1 = damped chase toward the tracked element.
+     * Scene-wide smoothing for how planes follow their tracked elements.
+     * `0` (the default) follows exactly; higher values follow more slowly.
+     * Fixed for the life of the scene — there is no per-plane value.
      */
-    lerp?: number;
+    damping?: number;
 }
 
 export interface AddPlaneOptions {
@@ -25,12 +26,6 @@ export interface AddPlaneOptions {
      */
     source?: PlaneSource;
 
-    /** Stable id for lookups; auto-assigned if omitted. */
-    id?: number;
-
-    /** How the texture maps onto the plane rect. Default `"cover"`. */
+    /** How the texture maps onto the plane rect. Fixed at creation. Default `"cover"`. */
     fit?: PlaneFit;
-
-    /** Per-plane override of the scene `lerp`. */
-    lerp?: number;
 }

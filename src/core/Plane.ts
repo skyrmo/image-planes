@@ -1,4 +1,4 @@
-import type { PlaneSource, Rect } from "../types";
+import type { Rect } from "../types";
 import type { PlaneRecord } from "./records";
 
 /**
@@ -6,42 +6,35 @@ import type { PlaneRecord } from "./records";
  * @internal — not part of the public API; stripped from the emitted .d.ts.
  */
 interface PlaneOps {
-    loadTexture(record: PlaneRecord, source: PlaneSource): Promise<void>;
     removeRecord(id: number): void;
+    bringToFront(id: number): void;
 }
 
 /**
- * Public handle for one image plane. `bounds` and `opacity` are plain mutable
- * state, designed to be driven by any animation library:
- *
- *   plane.detach();
- *   gsap.to(plane.bounds, { ...rectFromElement(target), duration: 0.9 });
- *   gsap.to(plane, { opacity: 0 });
+ * Public handle for one image plane, and the only way to refer to it — planes
+ * have no id. `bounds` and `opacity` are plain mutable state.
  */
 export class ImagePlane {
     private record: PlaneRecord;
     private ops: PlaneOps;
-    private readyPromise: Promise<void>;
+
+    /** Resolves when the texture is uploaded; the plane isn't drawn until then. */
+    readonly ready: Promise<void>;
 
     /** @internal Constructed by `ImagePlanes.addPlane`, never directly. */
     constructor(record: PlaneRecord, ops: PlaneOps, ready: Promise<void>) {
         this.record = record;
         this.ops = ops;
-        this.readyPromise = ready;
-    }
-
-    get id(): number {
-        return this.record.id;
-    }
-
-    /** Resolves when the current texture is uploaded; the plane isn't drawn until then. */
-    get ready(): Promise<void> {
-        return this.readyPromise;
+        this.ready = ready;
     }
 
     /**
-     * Stable mutable rect (CSS px). While attached, the render loop keeps it on
-     * the tracked element; while detached, you own it.
+     * The plane's rect in CSS pixels. This is the same object for the plane's
+     * entire lifetime — mutate its fields, never reassign it, and animation
+     * libraries can hold the reference. See docs/adr/0001.
+     *
+     * While tracking, the render loop overwrites these values every frame.
+     * While untracked, they are yours.
      */
     get bounds(): Rect {
         return this.record.bounds;
@@ -55,33 +48,29 @@ export class ImagePlane {
         this.record.opacity = value;
     }
 
-    get lerp(): number | null {
-        return this.record.lerp;
+    /** True while the render loop is following this plane's tracked element. */
+    get isTracking(): boolean {
+        return this.record.tracking;
     }
 
-    set lerp(value: number | null) {
-        this.record.lerp = value;
+    /**
+     * Stop following the tracked element — you own `bounds` until you call
+     * `track()` again. Kill any animation still writing to `bounds` before
+     * re-tracking, or it and the render loop will fight over the same object.
+     */
+    untrack(): void {
+        this.record.tracking = false;
     }
 
-    get isAttached(): boolean {
-        return this.record.trackBounds;
-    }
-
-    /** Stop DOM tracking — you own bounds now (start of a "flight"). */
-    detach(): void {
-        this.record.trackBounds = false;
-    }
-
-    /** Resume tracking, optionally re-anchoring to a new element. */
-    attach(el?: HTMLElement): void {
+    /** Resume following, optionally re-anchoring to a different element. */
+    track(el?: HTMLElement): void {
         if (el) this.record.trackedEl = el;
-        this.record.trackBounds = true;
+        this.record.tracking = true;
     }
 
-    /** Swap the texture. Returns (and replaces `ready` with) the upload promise. */
-    setSource(source: PlaneSource): Promise<void> {
-        this.readyPromise = this.ops.loadTexture(this.record, source);
-        return this.readyPromise;
+    /** Draw this plane over all the others from now on. */
+    bringToFront(): void {
+        this.ops.bringToFront(this.record.id);
     }
 
     /** Destroy this plane's GPU resources and drop it from the scene. */
