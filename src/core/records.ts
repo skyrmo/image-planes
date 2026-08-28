@@ -1,4 +1,5 @@
 import type { PlaneFit, Rect } from "../types";
+import type { ImagePlane } from "./Plane";
 
 /** Internal types that use WebGPU handles.
  *  Deliberately kept out of `types.ts` (which the public entry point imports)
@@ -18,9 +19,17 @@ export interface ManagedTexture {
  * @internal: per-plane record. The public API wraps this in an ImagePlane handle;
  * `bounds` is a stable object mutated in place and never reassigned, so
  * animation libraries can hold a reference to it. See docs/adr/0001.
+ *
+ * The record set in PlaneManager is the single collection of live planes —
+ * `handle` lets the public `planes` list be derived from it rather than kept in
+ * a second, separately-maintained set.
  */
 export interface PlaneRecord {
-    id: number;
+    // The public handle wrapping this record. Null only between createRecord()
+    // and the ImagePlane built a few lines later in addPlane(); non-null for the
+    // record's entire observable lifetime.
+    handle: ImagePlane | null;
+
     texture: GPUTexture | null;
     uniformBuffer: GPUBuffer;
     bindGroup: GPUBindGroup | null;

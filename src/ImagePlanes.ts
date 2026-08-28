@@ -1,35 +1,37 @@
-import { WebGPUCore } from "./core/WebGPUCore";
+import { configureCanvas, initWebGPU } from "./core/gpu";
 import { Renderer } from "./core/Renderer";
 import { TextureManager } from "./core/TextureManager";
 import { ImagePlane } from "./core/Plane";
 import { PlaneManager } from "./core/PlaneManager";
 import { rectFromElement } from "./core/util";
-import type { AddPlaneOptions, ImagePlanesOptions, PlaneSource } from "./types";
 import type { PlaneRecord } from "./core/records";
+import type {
+    AddPlaneOptions,
+    BeforeRenderCallback,
+    ImagePlanesOptions,
+    PlaneSource,
+} from "./types";
 
 const FRAME_MS = 1000 / 60;
 
-export type BeforeRenderCallback = (time: number, dt: number) => void;
-
 /**
- * A scene of WebGPU image planes drawn on a full-viewport fixed canvas, each
- * tracking a DOM element. Bring your own animation: tick GSAP/Lenis/etc. in an
- * `onBeforeRender` hook and tween plane handles directly.
+ * A scene of WebGPU image planes drawn on a (full-viewport, fixed) canvas, each
+ * tracking a DOM element.
  */
 export class ImagePlanes {
     private canvas: HTMLCanvasElement;
-    private core: WebGPUCore;
+    private device: GPUDevice;
+    private context: GPUCanvasContext;
+    private format: GPUTextureFormat;
     private renderer: Renderer;
     private textureManager: TextureManager;
     private planeManager: PlaneManager;
 
-    private handles: Map<number, ImagePlane> = new Map();
     private hooks: Set<BeforeRenderCallback> = new Set();
 
     private rAF: number | null = null;
     private lastTime: number | null = null;
     private needRender = true;
-    private nextAutoId = 0;
 
     /**
      * Scene-wide bounds smoothing. 0 follows tracked elements exactly, higher
@@ -37,32 +39,42 @@ export class ImagePlanes {
      */
     readonly damping: number;
 
-    private handleResize = () => {
-        this.core.configureContext();
-        // A resize reallocates the swapchain — the old frame is gone, redraw.
-        this.requestRender();
-    };
-
-    constructor(canvas: HTMLCanvasElement, options: ImagePlanesOptions = {}) {
-        this.canvas = canvas;
-        this.damping = options.damping ?? 0;
-        this.core = new WebGPUCore();
-        this.renderer = new Renderer(this.core);
-        this.textureManager = new TextureManager(this.core);
-        this.planeManager = new PlaneManager(this.core, this.renderer);
+    /** Acquire the GPU device, build the pipeline, and return a scene. */
+    static async create(
+        canvas: HTMLCanvasElement,
+        options: ImagePlanesOptions = {},
+    ): Promise<ImagePlanes> {
+        const { device, context, format } = await initWebGPU(canvas);
+        return new ImagePlanes(canvas, device, context, format, options);
     }
 
-    /**
-     * Acquire the GPU device and build the pipeline. Rejects with
-     * `WebGPUUnsupportedError` when the browser or machine can't do WebGPU —
-     * that's the signal to leave your native <img>s visible and stop here.
-     */
-    async init(): Promise<void> {
-        await this.core.initialize(this.canvas);
-        this.renderer.initialize();
-        this.warnIfCanvasMisplaced();
+    /** Use `ImagePlanes.create()` as  GPU setup  is async. */
+    private constructor(
+        canvas: HTMLCanvasElement,
+        device: GPUDevice,
+        context: GPUCanvasContext,
+        format: GPUTextureFormat,
+        options: ImagePlanesOptions,
+    ) {
+        this.canvas = canvas;
+        this.device = device;
+        this.context = context;
+        this.format = format;
+        this.damping = options.damping ?? 0;
+
+        this.renderer = new Renderer(device, context, format);
+        this.textureManager = new TextureManager(device);
+        this.planeManager = new PlaneManager(device, this.renderer);
+
+        // this.warnIfCanvasMisplaced();
         window.addEventListener("resize", this.handleResize);
     }
+
+    private handleResize = () => {
+        configureCanvas(this.canvas, this.context, this.device, this.format);
+        // A resize reallocates the swapchain — the old frame is gone, redraw.
+        // this.requestRender();
+    };
 
     /**
      * Add a plane anchored to a DOM element. Returns the handle synchronously;
@@ -79,27 +91,36 @@ export class ImagePlanes {
             throw new Error("addPlane needs a `source` when `element` is not an <img>");
         }
 
-        const id = this.nextAutoId++;
-        const record = this.planeManager.createRecord(id, options.element, options.fit ?? "cover");
+        const record = this.planeManager.createRecord(options.element, options.fit ?? "cover");
+
         // Seed bounds so consumers can read them before the first frame.
         Object.assign(record.bounds, rectFromElement(options.element));
 
         const ready = this.loadTexture(record, source);
+
         const plane = new ImagePlane(
             record,
             {
-                removeRecord: (planeId) => this.removePlane(planeId),
-                bringToFront: (planeId) => this.planeManager.bringToFront(planeId),
+                removeRecord: (rec) => this.removePlane(rec),
+                bringToFront: (rec) => this.planeManager.bringToFront(rec),
             },
             ready,
         );
-        this.handles.set(id, plane);
+
+        // Back-pointer. The record set is the only collection of planes; `planes`
+        // reads through this, so there is no second set to keep in sync.
+        record.handle = plane;
 
         return plane;
     }
 
+    /**
+     * Every plane in the scene, in paint order — later entries draw over earlier
+     * ones, and `bringToFront()` moves a plane to the end.
+     */
     get planes(): ImagePlane[] {
-        return Array.from(this.handles.values());
+        // Non-null: every record in the set has been through addPlane().
+        return Array.from(this.planeManager.getRecords(), (record) => record.handle!);
     }
 
     /**
@@ -111,11 +132,6 @@ export class ImagePlanes {
     onBeforeRender(callback: BeforeRenderCallback): () => void {
         this.hooks.add(callback);
         return () => this.hooks.delete(callback);
-    }
-
-    /** Force a draw on the next frame (submits are skipped when nothing changed). */
-    requestRender(): void {
-        this.needRender = true;
     }
 
     start(): void {
@@ -133,12 +149,12 @@ export class ImagePlanes {
     }
 
     destroy(): void {
-        this.stop();
         window.removeEventListener("resize", this.handleResize);
+        this.stop();
         this.planeManager.destroyAll();
-        this.handles.clear();
         this.hooks.clear();
-        this.core.destroy();
+        this.context.unconfigure();
+        this.device.destroy();
     }
 
     private loop = (time: number) => {
@@ -162,13 +178,12 @@ export class ImagePlanes {
     private async loadTexture(record: PlaneRecord, source: PlaneSource): Promise<void> {
         const managed = await this.textureManager.load(source);
         this.planeManager.attachTexture(record, managed.texture, managed.width / managed.height);
-        this.requestRender();
+        this.needRender = true;
     }
 
-    private removePlane(id: number): void {
-        this.planeManager.removeRecord(id);
-        this.handles.delete(id);
-        this.requestRender();
+    private removePlane(record: PlaneRecord): void {
+        this.planeManager.removeRecord(record);
+        this.needRender = true;
     }
 
     /**
@@ -177,30 +192,30 @@ export class ImagePlanes {
      * misrenders silently. Warn once rather than fail — and never touch the
      * consumer's CSS.
      */
-    private warnIfCanvasMisplaced(): void {
-        const position = getComputedStyle(this.canvas).position;
-        if (position !== "fixed") {
-            console.warn(
-                `[image-planes] canvas has position: ${position}, expected "fixed". ` +
-                    "Planes will not line up with their elements.",
-            );
-            return;
-        }
+    // private warnIfCanvasMisplaced(): void {
+    //     const position = getComputedStyle(this.canvas).position;
+    //     if (position !== "fixed") {
+    //         console.warn(
+    //             `[image-planes] canvas has position: ${position}, expected "fixed". ` +
+    //                 "Planes will not line up with their elements.",
+    //         );
+    //         return;
+    //     }
 
-        const rect = this.canvas.getBoundingClientRect();
-        const offBy = (a: number, b: number) => Math.abs(a - b) > 1;
-        if (
-            offBy(rect.left, 0) ||
-            offBy(rect.top, 0) ||
-            offBy(rect.width, window.innerWidth) ||
-            offBy(rect.height, window.innerHeight)
-        ) {
-            console.warn(
-                "[image-planes] canvas does not cover the viewport " +
-                    `(${rect.width}x${rect.height} at ${rect.left},${rect.top}; ` +
-                    `expected ${window.innerWidth}x${window.innerHeight} at 0,0). ` +
-                    "Planes will not line up with their elements.",
-            );
-        }
-    }
+    //     const rect = this.canvas.getBoundingClientRect();
+    //     const offBy = (a: number, b: number) => Math.abs(a - b) > 1;
+    //     if (
+    //         offBy(rect.left, 0) ||
+    //         offBy(rect.top, 0) ||
+    //         offBy(rect.width, window.innerWidth) ||
+    //         offBy(rect.height, window.innerHeight)
+    //     ) {
+    //         console.warn(
+    //             "[image-planes] canvas does not cover the viewport " +
+    //                 `(${rect.width}x${rect.height} at ${rect.left},${rect.top}; ` +
+    //                 `expected ${window.innerWidth}x${window.innerHeight} at 0,0). ` +
+    //                 "Planes will not line up with their elements.",
+    //         );
+    //     }
+    // }
 }

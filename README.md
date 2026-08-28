@@ -15,12 +15,11 @@ npm install image-planes
 ```ts
 import { ImagePlanes, WebGPUUnsupportedError } from "image-planes";
 
-const scene = new ImagePlanes(canvasEl, {
-    damping: 0.88, // optional smoothing; 0 (default) follows exactly
-});
-
+let scene: ImagePlanes;
 try {
-    await scene.init();
+    scene = await ImagePlanes.create(canvasEl, {
+        damping: 0.88, // optional smoothing; 0 (default) follows exactly
+    });
 } catch (error) {
     if (error instanceof WebGPUUnsupportedError) return; // keep the native <img>s
     throw error;
@@ -40,7 +39,7 @@ scene.start();
 ```
 
 The canvas must be a full-viewport fixed layer — plane positions are computed
-against the viewport, and the canvas is sized from it. `init()` warns to the
+against the viewport, and the canvas is sized from it. `create()` warns to the
 console if the canvas isn't positioned this way:
 
 ```css
@@ -91,7 +90,7 @@ header and then follows the new element on scroll.
 - **Draw order is the order planes were added.** There's no depth buffer and no
   z-index — later planes paint over earlier ones. `plane.bringToFront()` moves one
   to the top.
-- **No WebGPU?** `scene.init()` rejects with `WebGPUUnsupportedError` — keep your
+- **No WebGPU?** `ImagePlanes.create()` rejects with `WebGPUUnsupportedError` — keep your
   native images visible and skip the GPU layer entirely. The page should work
   without it. A `WebGPUInitError` means WebGPU exists but setup failed, which is a
   real fault rather than an unsupported browser.

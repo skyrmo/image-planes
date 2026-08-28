@@ -16,6 +16,9 @@ export interface ImagePlanesOptions {
     damping?: number;
 }
 
+/** Called once per animation frame, before planes are updated and drawn. */
+export type BeforeRenderCallback = (time: number, dt: number) => void;
+
 export interface AddPlaneOptions {
     /** The DOM node the plane tracks each frame. */
     element: HTMLElement;

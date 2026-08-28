@@ -1,4 +1,3 @@
-import { WebGPUCore } from "./WebGPUCore";
 import { Renderer, UNIFORM_FLOATS } from "./Renderer";
 import type { PlaneFit } from "../types";
 import type { PlaneRecord } from "./records";
@@ -8,19 +7,19 @@ import type { PlaneRecord } from "./records";
 const SNAP_EPSILON = 0.05;
 
 export class PlaneManager {
-    private core: WebGPUCore;
+    private device: GPUDevice;
     private renderer: Renderer;
-    private records: Map<number, PlaneRecord> = new Map();
+    private records: Set<PlaneRecord> = new Set();
     private scratch = new Float32Array(UNIFORM_FLOATS);
 
-    constructor(core: WebGPUCore, renderer: Renderer) {
-        this.core = core;
+    constructor(device: GPUDevice, renderer: Renderer) {
+        this.device = device;
         this.renderer = renderer;
     }
 
-    createRecord(id: number, trackedEl: HTMLElement, fit: PlaneFit): PlaneRecord {
+    createRecord(trackedEl: HTMLElement, fit: PlaneFit): PlaneRecord {
         const record: PlaneRecord = {
-            id,
+            handle: null, // set by addPlane() as soon as the handle exists
             texture: null,
             uniformBuffer: this.renderer.createUniformBuffer(),
             bindGroup: null,
@@ -35,7 +34,7 @@ export class PlaneManager {
             lastUniform: new Float32Array(UNIFORM_FLOATS).fill(NaN),
         };
 
-        this.records.set(id, record);
+        this.records.add(record);
 
         return record;
     }
@@ -48,12 +47,10 @@ export class PlaneManager {
         record.ready = true;
     }
 
-    removeRecord(id: number): void {
-        const record = this.records.get(id);
-        if (!record) return;
+    removeRecord(record: PlaneRecord): void {
+        if (!this.records.delete(record)) return;
         record.texture?.destroy();
         record.uniformBuffer.destroy();
-        this.records.delete(id);
     }
 
     /**
@@ -61,7 +58,6 @@ export class PlaneManager {
      * changed this frame (the dirty flag that gates the GPU submit).
      */
     update(dtRatio: number, damping: number): boolean {
-        const device = this.core.getDevice();
         // Public `damping` counts up from 0 (= follow exactly); the internal
         // coefficient is the fraction of the gap closed per 60Hz frame. The
         // floor keeps a damping of ~1 from stalling completely.
@@ -144,7 +140,7 @@ export class PlaneManager {
             }
             if (changed) {
                 last.set(s);
-                device.queue.writeBuffer(record.uniformBuffer, 0, s);
+                this.device.queue.writeBuffer(record.uniformBuffer, 0, s);
                 dirty = true;
             }
         }
@@ -154,18 +150,12 @@ export class PlaneManager {
 
     /**
      * Move a plane to the end of the iteration order, so it paints over every
-     * other plane. `Map` preserves insertion order, so re-inserting is O(1)
+     * other plane. `Set` preserves insertion order, so re-inserting is O(1)
      * and needs no sort or stored depth.
      */
-    bringToFront(id: number): void {
-        const record = this.records.get(id);
-        if (!record) return;
-        this.records.delete(id);
-        this.records.set(id, record);
-    }
-
-    getRecord(id: number): PlaneRecord | undefined {
-        return this.records.get(id);
+    bringToFront(record: PlaneRecord): void {
+        if (!this.records.delete(record)) return;
+        this.records.add(record);
     }
 
     getRecords(): IterableIterator<PlaneRecord> {
@@ -173,7 +163,7 @@ export class PlaneManager {
     }
 
     destroyAll(): void {
-        for (const record of this.records.values()) {
+        for (const record of this.records) {
             record.texture?.destroy();
             record.uniformBuffer.destroy();
         }

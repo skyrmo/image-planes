@@ -1,6 +1,5 @@
 import vertexShaderSource from "../shaders/vertex.wgsl?raw";
 import fragmentShaderSource from "../shaders/fragment.wgsl?raw";
-import { WebGPUCore } from "./WebGPUCore";
 import type { PlaneRecord } from "./records";
 
 // vec4f rect + f32 opacity + vec2f fitScale, padded to 16-byte struct alignment.
@@ -8,16 +7,14 @@ export const UNIFORM_SIZE = 32;
 export const UNIFORM_FLOATS = UNIFORM_SIZE / 4;
 
 export class Renderer {
-    private core: WebGPUCore;
-    private pipeline: GPURenderPipeline | null = null;
-    private sampler: GPUSampler | null = null;
+    private device: GPUDevice;
+    private context: GPUCanvasContext;
+    private pipeline: GPURenderPipeline;
+    private sampler: GPUSampler;
 
-    constructor(core: WebGPUCore) {
-        this.core = core;
-    }
-
-    initialize(): void {
-        const device = this.core.getDevice();
+    constructor(device: GPUDevice, context: GPUCanvasContext, format: GPUTextureFormat) {
+        this.device = device;
+        this.context = context;
 
         this.sampler = device.createSampler({
             magFilter: "linear",
@@ -42,7 +39,7 @@ export class Renderer {
                 entryPoint: "fragmentMain",
                 targets: [
                     {
-                        format: this.core.getCanvasFormat(),
+                        format,
                         blend: {
                             color: {
                                 srcFactor: "one",
@@ -65,20 +62,14 @@ export class Renderer {
     }
 
     createUniformBuffer(): GPUBuffer {
-        const device = this.core.getDevice();
-        return device.createBuffer({
+        return this.device.createBuffer({
             size: UNIFORM_SIZE,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
     }
 
     createBindGroup(texture: GPUTexture, uniformBuffer: GPUBuffer): GPUBindGroup {
-        const device = this.core.getDevice();
-        if (!this.pipeline || !this.sampler) {
-            throw new Error("Renderer not initialized");
-        }
-
-        return device.createBindGroup({
+        return this.device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),
             entries: [
                 { binding: 0, resource: this.sampler },
@@ -89,19 +80,11 @@ export class Renderer {
     }
 
     renderAll(planes: Iterable<PlaneRecord>): void {
-        const device = this.core.getDevice();
-        const context = this.core.getContext();
-
-        if (!context || !this.pipeline) {
-            console.error("Renderer not properly initialized");
-            return;
-        }
-
-        const encoder = device.createCommandEncoder();
+        const encoder = this.device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
             colorAttachments: [
                 {
-                    view: context.getCurrentTexture().createView(),
+                    view: this.context.getCurrentTexture().createView(),
                     clearValue: { r: 0, g: 0, b: 0, a: 0 }, // transparent — page shows through
                     loadOp: "clear",
                     storeOp: "store",
@@ -119,6 +102,6 @@ export class Renderer {
         }
 
         pass.end();
-        device.queue.submit([encoder.finish()]);
+        this.device.queue.submit([encoder.finish()]);
     }
 }

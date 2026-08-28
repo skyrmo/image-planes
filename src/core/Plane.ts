@@ -6,8 +6,8 @@ import type { PlaneRecord } from "./records";
  * @internal — not part of the public API; stripped from the emitted .d.ts.
  */
 interface PlaneOps {
-    removeRecord(id: number): void;
-    bringToFront(id: number): void;
+    removeRecord(record: PlaneRecord): void;
+    bringToFront(record: PlaneRecord): void;
 }
 
 /**
@@ -16,12 +16,12 @@ interface PlaneOps {
  */
 export class ImagePlane {
     private record: PlaneRecord;
-    private ops: PlaneOps;
+    private ops: PlaneOps; // this is the closure with remoive and bring to front.
 
     /** Resolves when the texture is uploaded; the plane isn't drawn until then. */
     readonly ready: Promise<void>;
 
-    /** @internal Constructed by `ImagePlanes.addPlane`, never directly. */
+    /** Constructed by `ImagePlanes.addPlane`, never directly. */
     constructor(record: PlaneRecord, ops: PlaneOps, ready: Promise<void>) {
         this.record = record;
         this.ops = ops;
@@ -31,7 +31,7 @@ export class ImagePlane {
     /**
      * The plane's rect in CSS pixels. This is the same object for the plane's
      * entire lifetime — mutate its fields, never reassign it, and animation
-     * libraries can hold the reference. See docs/adr/0001.
+     * libraries can hold the reference.
      *
      * While tracking, the render loop overwrites these values every frame.
      * While untracked, they are yours.
@@ -70,11 +70,11 @@ export class ImagePlane {
 
     /** Draw this plane over all the others from now on. */
     bringToFront(): void {
-        this.ops.bringToFront(this.record.id);
+        this.ops.bringToFront(this.record);
     }
 
     /** Destroy this plane's GPU resources and drop it from the scene. */
     remove(): void {
-        this.ops.removeRecord(this.record.id);
+        this.ops.removeRecord(this.record);
     }
 }

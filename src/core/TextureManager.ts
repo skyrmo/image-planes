@@ -1,13 +1,12 @@
-import { WebGPUCore } from "./WebGPUCore";
 import { waitForImageReady } from "./util";
 import type { PlaneSource } from "../types";
 import type { ManagedTexture } from "./records";
 
 export class TextureManager {
-    private core: WebGPUCore;
+    private device: GPUDevice;
 
-    constructor(core: WebGPUCore) {
-        this.core = core;
+    constructor(device: GPUDevice) {
+        this.device = device;
     }
 
     /** Resolve any supported source to an ImageBitmap, then upload it. */
@@ -38,16 +37,14 @@ export class TextureManager {
     }
 
     createTexture(bitmap: ImageBitmap): ManagedTexture {
-        const device = this.core.getDevice();
-
-        const texture = device.createTexture({
+        const texture = this.device.createTexture({
             size: [bitmap.width, bitmap.height, 1],
             format: "rgba8unorm",
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
             // GPUTextureUsage.RENDER_ATTACHMENT,
         });
 
-        device.queue.copyExternalImageToTexture(
+        this.device.queue.copyExternalImageToTexture(
             { source: bitmap },
             { texture, premultipliedAlpha: true },
             [bitmap.width, bitmap.height],
