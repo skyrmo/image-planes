@@ -9,7 +9,7 @@ struct VertexOutput {
     @location(0) texcoord: vec2f,
 };
 
-@group(0) @binding(2) var<uniform> plane: PlaneUniforms;
+@group(1) @binding(1) var<uniform> plane: PlaneUniforms;
 
 @vertex
 fn vertexMain(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {

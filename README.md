@@ -95,12 +95,6 @@ header and then follows the new element on scroll.
 - **Planes have no id.** The handle returned by `addPlane` is the only way to refer
   to one; `scene.planes` lists them in draw order.
 
-## Contributing
-
-[ARCHITECTURE.md](./ARCHITECTURE.md) explains the internals — data flow, the
-render loop, and the coordinate math. [CONTEXT.md](./CONTEXT.md) is the glossary,
-and [docs/adr/](./docs/adr/) records why the load-bearing decisions were made.
-
 ## License
 
 MIT

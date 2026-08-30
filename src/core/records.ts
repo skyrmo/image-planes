@@ -32,7 +32,17 @@ export interface PlaneRecord {
 
     texture: GPUTexture | null;
     uniformBuffer: GPUBuffer;
-    bindGroup: GPUBindGroup | null;
+
+    // Group 1: this plane's texture and uniforms. Null until the texture is
+    // uploaded, which is also what keeps the plane out of the render pass.
+    planeBindGroup: GPUBindGroup | null;
+
+    // The pipeline this plane draws with, or null while it isn't drawable.
+    // Plain planes get the renderer's shared default immediately; a plane with
+    // an effect stays null until its shader compiles, so it never flashes
+    // un-effected on the way there.
+    pipeline: GPURenderPipeline | null;
+
     bounds: Rect;
     opacity: number;
     trackedEl: HTMLElement | null;

@@ -33,6 +33,13 @@ export async function initWebGPU(canvas: HTMLCanvasElement): Promise<WebGPUSetup
         throw new Error("Failed to create a WebGPU device", { cause });
     }
 
+    // WebGPU reports validation errors asynchronously and swallows them
+    // otherwise, so a wrong bind group layout or uniform size shows up as
+    // "nothing drew" with an empty console. Surface them.
+    device.addEventListener("uncapturederror", (event) => {
+        console.error("[image-planes]", (event as GPUUncapturedErrorEvent).error.message);
+    });
+
     const context = canvas.getContext("webgpu");
     if (!context) {
         throw new Error('The canvas would not return a "webgpu" context');

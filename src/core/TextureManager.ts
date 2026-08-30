@@ -40,8 +40,10 @@ export class TextureManager {
         const texture = this.device.createTexture({
             size: [bitmap.width, bitmap.height, 1],
             format: "rgba8unorm",
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-            // GPUTextureUsage.RENDER_ATTACHMENT,
+            usage:
+                GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.RENDER_ATTACHMENT,
         });
 
         this.device.queue.copyExternalImageToTexture(

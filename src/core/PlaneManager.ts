@@ -22,7 +22,8 @@ export class PlaneManager {
             handle: null, // set by addPlane() as soon as the handle exists
             texture: null,
             uniformBuffer: this.renderer.createUniformBuffer(),
-            bindGroup: null,
+            planeBindGroup: null,
+            pipeline: this.renderer.defaultPipeline,
             bounds: { x: 0, y: 0, width: 0, height: 0 },
             opacity: 1,
             trackedEl,
@@ -43,7 +44,7 @@ export class PlaneManager {
         record.texture?.destroy();
         record.texture = texture;
         record.texAspect = texAspect;
-        record.bindGroup = this.renderer.createBindGroup(texture, record.uniformBuffer);
+        record.planeBindGroup = this.renderer.createPlaneBindGroup(texture, record.uniformBuffer);
         record.ready = true;
     }
 

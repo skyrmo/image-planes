@@ -152,6 +152,7 @@ export class ImagePlanes {
         window.removeEventListener("resize", this.handleResize);
         this.stop();
         this.planeManager.destroyAll();
+        this.renderer.destroy();
         this.hooks.clear();
         this.context.unconfigure();
         this.device.destroy();
