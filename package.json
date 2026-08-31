@@ -16,7 +16,9 @@
     },
     "scripts": {
         "build": "vite build",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "check:uniforms": "node scripts/check-uniforms.ts",
+        "check:effects": "node scripts/check-effect-source.ts"
     },
     "devDependencies": {
         "@webgpu/types": "^0.1.71",

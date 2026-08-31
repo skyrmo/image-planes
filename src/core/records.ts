@@ -1,4 +1,5 @@
-import type { PlaneFit, Rect } from "../types";
+import type { PlaneFit, Rect, UniformValues } from "../types";
+import type { UniformLayout } from "./uniforms";
 import type { ImagePlane } from "./ImagePlane";
 
 /** Internal types that use WebGPU handles.
@@ -63,6 +64,29 @@ export interface PlaneRecord {
     // True once bounds have been seeded from the element at least once.
     seeded: boolean;
 
+    // Bounds at the end of the previous frame, for the velocity uniform. The
+    // damped chase already lags the tracked element, so the difference between
+    // these and `bounds` is a momentum signal rather than raw scroll delta.
+    prevX: number;
+    prevY: number;
+
     // Last values written to the uniform buffer, for dirty-checking.
     lastUniform: Float32Array;
+
+    // Group 2. All four are null on a plane with no effect, and also on one
+    // whose effect declares no uniforms, which gets no group 2 at all.
+    effectLayout: UniformLayout | null;
+    effectUniformBuffer: GPUBuffer | null;
+    effectBindGroup: GPUBindGroup | null;
+    lastEffectUniform: Float32Array | null;
+
+    // The live object the consumer mutates, exactly like bounds. Always this
+    // plane's own copy, never the effect definition's object: two planes
+    // sharing one imported effect must not share one set of values. Empty on a
+    // plane with no effect, where writing to it does nothing.
+    uniformValues: UniformValues;
+
+    // Redraw every frame regardless of the dirty check. The only way to drive
+    // an effect from scene.time, where no JS value moves.
+    animated: boolean;
 }

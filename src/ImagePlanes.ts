@@ -3,11 +3,14 @@ import { Renderer } from "./core/Renderer";
 import { TextureManager } from "./core/TextureManager";
 import { ImagePlane } from "./core/ImagePlane";
 import { PlaneManager } from "./core/PlaneManager";
-import { rectFromElement } from "./core/util";
+import { EffectCompiler } from "./core/EffectCompiler";
+import { SCENE_UNIFORM_FLOATS } from "./core/Renderer";
+import { cloneValues } from "./core/uniforms";
 import type { PlaneRecord } from "./core/records";
 import type {
     AddPlaneOptions,
     BeforeRenderCallback,
+    EffectDefinition,
     ImagePlanesOptions,
     PlaneSource,
 } from "./types";
@@ -26,12 +29,26 @@ export class ImagePlanes {
     private renderer: Renderer;
     private textureManager: TextureManager;
     private planeManager: PlaneManager;
+    private effectCompiler: EffectCompiler;
 
     private hooks: Set<BeforeRenderCallback> = new Set();
 
     private rAF: number | null = null;
     private lastTime: number | null = null;
     private needRender = true;
+
+    private sceneScratch = new Float32Array(SCENE_UNIFORM_FLOATS);
+
+    // Wall clock for shader effects, in seconds, from the first drawn frame.
+    // Not reset by stop()/start(): a clock that jumps backwards is worse than
+    // one that skips the paused interval.
+    private startTime: number | null = null;
+
+    // Cursor in viewport CSS px, from a window listener installed lazily by
+    // the first effect plane. A scene with no effects installs nothing.
+    private pointerX = 0;
+    private pointerY = 0;
+    private pointerListening = false;
 
     /**
      * Scene-wide bounds smoothing. 0 follows tracked elements exactly, higher
@@ -65,6 +82,7 @@ export class ImagePlanes {
         this.renderer = new Renderer(device, context, format);
         this.textureManager = new TextureManager(device);
         this.planeManager = new PlaneManager(device, this.renderer);
+        this.effectCompiler = new EffectCompiler(device, this.renderer);
 
         // this.warnIfCanvasMisplaced();
         window.addEventListener("resize", this.handleResize);
@@ -93,10 +111,12 @@ export class ImagePlanes {
 
         const record = this.planeManager.createRecord(options.element, options.fit ?? "cover");
 
-        // Seed bounds so consumers can read them before the first frame.
-        Object.assign(record.bounds, rectFromElement(options.element));
-
-        const ready = this.loadTexture(record, source);
+        // Two independent async arms. `ready` covers both, so a shader that
+        // fails to compile surfaces the same way a 404 image does.
+        const texture = this.loadTexture(record, source);
+        const effect = options.effect
+            ? this.attachEffect(record, options.effect)
+            : Promise.resolve();
 
         const plane = new ImagePlane(
             record,
@@ -104,7 +124,7 @@ export class ImagePlanes {
                 removeRecord: (rec) => this.removePlane(rec),
                 bringToFront: (rec) => this.planeManager.bringToFront(rec),
             },
-            ready,
+            Promise.all([texture, effect]).then(() => undefined),
         );
 
         // Back-pointer. The record set is the only collection of planes; `planes`
@@ -150,6 +170,7 @@ export class ImagePlanes {
 
     destroy(): void {
         window.removeEventListener("resize", this.handleResize);
+        window.removeEventListener("pointermove", this.handlePointer);
         this.stop();
         this.planeManager.destroyAll();
         this.renderer.destroy();
@@ -171,7 +192,17 @@ export class ImagePlanes {
         const dirty = this.planeManager.update(dt / FRAME_MS, this.damping);
 
         if (dirty || this.needRender) {
-            this.renderer.renderAll(this.planeManager.getRecords());
+            if (this.startTime === null) this.startTime = time;
+
+            const s = this.sceneScratch;
+            s[0] = window.innerWidth;
+            s[1] = window.innerHeight;
+            s[2] = this.pointerX;
+            s[3] = this.pointerY;
+            s[4] = (time - this.startTime) / 1000;
+            s[5] = window.devicePixelRatio || 1;
+
+            this.renderer.renderAll(this.planeManager.getRecords(), s);
             this.needRender = false;
         }
     };
@@ -181,6 +212,46 @@ export class ImagePlanes {
         this.planeManager.attachTexture(record, managed.texture, managed.width / managed.height);
         this.needRender = true;
     }
+
+    private async attachEffect(record: PlaneRecord, effect: EffectDefinition): Promise<void> {
+        // Everything up to the await runs before addPlane returns, so
+        // plane.uniforms is tweenable in the same tick even though the shader
+        // is still compiling.
+        record.uniformValues = cloneValues(effect.uniforms ?? {});
+        // Withhold the default pipeline so the plane isn't drawn un-effected
+        // for the frames the compile takes.
+        record.pipeline = null;
+        this.ensurePointerTracking();
+
+        const compiled = await this.effectCompiler.compile(effect);
+
+        // The plane may have been removed while this was in flight, in which
+        // case its buffers are already destroyed.
+        if (!this.planeManager.has(record)) return;
+
+        this.planeManager.attachEffect(record, compiled, effect.animated === true);
+        this.needRender = true;
+    }
+
+    /**
+     * The canvas is pointer-events: none and never sees the cursor, so
+     * `scene.pointer` needs a window listener. Installed on the first effect
+     * plane, since nothing else can read it.
+     */
+    private ensurePointerTracking(): void {
+        if (this.pointerListening) return;
+        this.pointerListening = true;
+        window.addEventListener("pointermove", this.handlePointer, { passive: true });
+    }
+
+    private handlePointer = (event: PointerEvent) => {
+        this.pointerX = event.clientX;
+        this.pointerY = event.clientY;
+        // No dirty check can see this. The listener only exists once a plane
+        // has an effect, so redrawing on move is the least surprising rule,
+        // even for an effect that never reads the pointer.
+        this.needRender = true;
+    };
 
     private removePlane(record: PlaneRecord): void {
         this.planeManager.removeRecord(record);

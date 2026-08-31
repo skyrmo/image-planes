@@ -1,14 +1,5 @@
-struct PlaneUniforms {
-    rect: vec4f,
-    opacity: f32,
-    fitScale: vec2f,
-};
-
-struct VertexOutput {
-    @builtin(position) position: vec4f,
-    @location(0) texcoord: vec2f,
-};
-
+// The vertex stage reads only the plane rect, so it declares that one binding
+// rather than pulling in all of bindings.wgsl.
 @group(1) @binding(1) var<uniform> plane: PlaneUniforms;
 
 @vertex

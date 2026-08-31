@@ -1,14 +1,15 @@
-import vertexShaderSource from "../shaders/vertex.wgsl?raw";
-import fragmentShaderSource from "../shaders/fragment.wgsl?raw";
+import { FRAGMENT_SOURCE, VERTEX_SOURCE } from "../shaders/sources";
 import type { PlaneRecord } from "./records";
 
-// vec4f rect + f32 opacity + vec2f fitScale, padded to 16-byte struct alignment.
-export const UNIFORM_SIZE = 32;
-export const UNIFORM_FLOATS = UNIFORM_SIZE / 4;
+// vec4f rect + vec2f fitScale + vec2f velocity + f32 aspect + f32 opacity,
+// rounded up to the 16-byte struct alignment the uniform address space wants.
+// Must stay in step with the PlaneUniforms struct in shaders/common.wgsl,
+// field order included. Nothing checks that they agree; a mismatch renders
+// garbage rather than failing.
+export const PLANE_UNIFORM_SIZE = 48;
+export const PLANE_UNIFORM_FLOATS = PLANE_UNIFORM_SIZE / 4;
 
-// vec2f resolution + vec2f pointer + f32 time + f32 dpr, same padding rule.
-// Allocated and bound here but not yet written by anything, so it reads as the
-// zeroes WebGPU initialises it to. See docs/shader-effects-plan.md chunk 2.
+// vec2f resolution + vec2f pointer + f32 time + f32 dpr, same rounding.
 export const SCENE_UNIFORM_SIZE = 32;
 export const SCENE_UNIFORM_FLOATS = SCENE_UNIFORM_SIZE / 4;
 
@@ -98,8 +99,8 @@ export class Renderer {
             bindGroupLayouts: [this.sceneLayout, this.planeLayout, this.effectLayout],
         });
 
-        this.vertexModule = device.createShaderModule({ code: vertexShaderSource });
-        const fragmentModule = device.createShaderModule({ code: fragmentShaderSource });
+        this.vertexModule = device.createShaderModule({ code: VERTEX_SOURCE });
+        const fragmentModule = device.createShaderModule({ code: FRAGMENT_SOURCE });
 
         this.defaultPipeline = device.createRenderPipeline(
             this.pipelineDescriptor(fragmentModule, false),
@@ -159,9 +160,23 @@ export class Renderer {
         };
     }
 
+    /**
+     * Build a pipeline for a custom fragment module. Async so that a shader
+     * that fails validation rejects here rather than surfacing later as an
+     * uncaptured error with nothing drawn.
+     */
+    buildPipelineAsync(
+        fragmentModule: GPUShaderModule,
+        withEffectUniforms: boolean,
+    ): Promise<GPURenderPipeline> {
+        return this.device.createRenderPipelineAsync(
+            this.pipelineDescriptor(fragmentModule, withEffectUniforms),
+        );
+    }
+
     createUniformBuffer(): GPUBuffer {
         return this.device.createBuffer({
-            size: UNIFORM_SIZE,
+            size: PLANE_UNIFORM_SIZE,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
     }
@@ -177,7 +192,18 @@ export class Renderer {
         });
     }
 
-    renderAll(planeRecords: Iterable<PlaneRecord>): void {
+    createEffectBindGroup(buffer: GPUBuffer): GPUBindGroup {
+        return this.device.createBindGroup({
+            layout: this.effectLayout,
+            entries: [{ binding: 0, resource: { buffer } }],
+        });
+    }
+
+    renderAll(planeRecords: Iterable<PlaneRecord>, sceneUniforms: Float32Array): void {
+        // Written only on frames that draw, which is why an idle scene still
+        // submits nothing despite `time` advancing continuously.
+        this.device.queue.writeBuffer(this.sceneBuffer, 0, sceneUniforms);
+
         const encoder = this.device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
             colorAttachments: [
@@ -209,6 +235,10 @@ export class Renderer {
             }
 
             pass.setBindGroup(1, record.planeBindGroup);
+            // Absent on plain planes and on effects with no uniforms. Both
+            // pipeline layouts name the same group 0 and 1 layout objects, so
+            // switching between them leaves those two bound.
+            if (record.effectBindGroup) pass.setBindGroup(2, record.effectBindGroup);
             pass.draw(4);
         }
 
