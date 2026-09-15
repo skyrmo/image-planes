@@ -257,37 +257,4 @@ export class ImagePlanes {
         this.planeManager.removeRecord(record);
         this.needRender = true;
     }
-
-    /**
-     * Plane positions come from viewport-relative rects and the canvas is sized
-     * from the viewport, so a canvas that isn't a full-viewport fixed layer
-     * misrenders silently. Warn once rather than fail — and never touch the
-     * consumer's CSS.
-     */
-    // private warnIfCanvasMisplaced(): void {
-    //     const position = getComputedStyle(this.canvas).position;
-    //     if (position !== "fixed") {
-    //         console.warn(
-    //             `[image-planes] canvas has position: ${position}, expected "fixed". ` +
-    //                 "Planes will not line up with their elements.",
-    //         );
-    //         return;
-    //     }
-
-    //     const rect = this.canvas.getBoundingClientRect();
-    //     const offBy = (a: number, b: number) => Math.abs(a - b) > 1;
-    //     if (
-    //         offBy(rect.left, 0) ||
-    //         offBy(rect.top, 0) ||
-    //         offBy(rect.width, window.innerWidth) ||
-    //         offBy(rect.height, window.innerHeight)
-    //     ) {
-    //         console.warn(
-    //             "[image-planes] canvas does not cover the viewport " +
-    //                 `(${rect.width}x${rect.height} at ${rect.left},${rect.top}; ` +
-    //                 `expected ${window.innerWidth}x${window.innerHeight} at 0,0). ` +
-    //                 "Planes will not line up with their elements.",
-    //         );
-    //     }
-    // }
 }
