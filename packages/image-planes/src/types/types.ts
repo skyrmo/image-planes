@@ -8,3 +8,5 @@ export type Rect = {
 export interface AddPlaneOptions {
     element: HTMLElement; // DOM element
 }
+
+export type BeforeRenderCallback = (time: number, dt: number) => void;

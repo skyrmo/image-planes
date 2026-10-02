@@ -38,6 +38,11 @@ export class PlaneManager {
         const vh = window.innerHeight;
         for (const record of this.records) {
             const b = record.bounds;
+            const r = record.element.getBoundingClientRect();
+            b.x = r.x;
+            b.y = r.y;
+            b.width = r.width;
+            b.height = r.height;
             const s = this.scratch;
             // CSS px → clip space.
             s[0] = (b.x / vw) * 2 - 1;
