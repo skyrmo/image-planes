@@ -1,7 +1,8 @@
 import { configureCanvas, initWebGPU } from "./core/gpu";
 import { PlaneManager } from "./core/PlaneManager";
 import { Renderer } from "./core/Renderer";
-import type { AddPlaneOptions, BeforeRenderCallback } from "./types/types";
+import { loadTexture } from "./core/texture";
+import type { AddPlaneOptions, BeforeRenderCallback } from "./types";
 
 export class ImagePlanes {
     private canvas: HTMLCanvasElement;
@@ -40,9 +41,20 @@ export class ImagePlanes {
         window.addEventListener("resize", this.handleResize);
     }
 
-    addPlane(options: AddPlaneOptions): void {
-        this.planeManager.createRecord(options.element);
-        this.planeManager.update();
+    addPlane(options: AddPlaneOptions) {
+        const source =
+            options.source ??
+            (options.element instanceof HTMLImageElement ? options.element : undefined);
+
+        if (!source) throw new Error("addPlane: pass a source, or use an <img> element");
+
+        const record = this.planeManager.createRecord(options.element, source);
+
+        const ready = loadTexture(this.device, source).then(({ texture, aspect }) => {
+            this.planeManager.attachTexture(record, texture, aspect);
+        });
+
+        return { ready };
     }
 
     start(): void {

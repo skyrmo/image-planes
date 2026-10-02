@@ -1,6 +1,8 @@
-import { rectFromElement } from "../utils/utils";
+import type { PlaneSource } from "../types";
+import { rectFromElement } from "../utils";
 import type { PlaneRecord } from "./records";
 import type { Renderer } from "./Renderer";
+import { loadTexture } from "./texture";
 
 export const PLANE_UNIFORM_FLOATS = 12;
 
@@ -15,7 +17,7 @@ export class PlaneManager {
         this.renderer = renderer;
     }
 
-    createRecord(element: HTMLElement): PlaneRecord {
+    createRecord(element: HTMLElement, source: PlaneSource): PlaneRecord {
         const uniformBuffer = this.device.createBuffer({
             size: PLANE_UNIFORM_FLOATS * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -25,12 +27,25 @@ export class PlaneManager {
             element,
             bounds: rectFromElement(element),
             uniformBuffer,
-            bindGroup: this.renderer.createPlaneBindGroup(uniformBuffer),
+            bindGroup: null, // set once the texture has loaded
         };
 
         this.records.add(record);
 
+        loadTexture(this.device, source)
+            .then(({ texture }) => {
+                record.bindGroup = this.renderer.createPlaneBindGroup(texture, uniformBuffer);
+            })
+            .catch(console.error);
+
         return record;
+    }
+
+    attachTexture(record: PlaneRecord, texture: GPUTexture, aspect: number): void {
+        record.texture = texture;
+        record.texAspect = aspect;
+        record.bindGroup = this.renderer.createPlaneBindGroup(texture, record.uniformBuffer);
+        record.hasTexture = true;
     }
 
     update(): void {

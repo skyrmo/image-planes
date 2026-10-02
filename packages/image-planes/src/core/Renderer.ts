@@ -15,9 +15,18 @@ export class Renderer {
         this.device = device;
         this.context = context;
 
-        this.sceneLayout = device.createBindGroupLayout({ entries: [] });
+        const sampler: GPUSampler = device.createSampler({
+            magFilter: "linear",
+            minFilter: "linear",
+        });
+
+        this.sceneLayout = device.createBindGroupLayout({
+            entries: [{ binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler: {} }],
+        });
+
         this.planeLayout = device.createBindGroupLayout({
             entries: [
+                { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {} },
                 {
                     binding: 1,
                     visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -30,7 +39,10 @@ export class Renderer {
             bindGroupLayouts: [this.sceneLayout, this.planeLayout],
         });
 
-        this.sceneBindGroup = device.createBindGroup({ layout: this.sceneLayout, entries: [] });
+        this.sceneBindGroup = device.createBindGroup({
+            layout: this.sceneLayout,
+            entries: [{ binding: 0, resource: sampler }],
+        });
 
         this.pipeline = device.createRenderPipeline({
             layout: this.pipelineLayout,
@@ -63,10 +75,13 @@ export class Renderer {
         });
     }
 
-    createPlaneBindGroup(uniformBuffer: GPUBuffer): GPUBindGroup {
+    createPlaneBindGroup(texture: GPUTexture, uniformBuffer: GPUBuffer): GPUBindGroup {
         return this.device.createBindGroup({
             layout: this.planeLayout,
-            entries: [{ binding: 1, resource: { buffer: uniformBuffer } }],
+            entries: [
+                { binding: 0, resource: texture.createView() },
+                { binding: 1, resource: { buffer: uniformBuffer } },
+            ],
         });
     }
 
@@ -86,6 +101,8 @@ export class Renderer {
         pass.setBindGroup(0, this.sceneBindGroup);
         for (const record of records) {
             if (!record.bindGroup) continue;
+            const b = record.bounds;
+            if (b.width <= 0 || b.height <= 0) continue;
             pass.setBindGroup(1, record.bindGroup);
             pass.draw(4);
         }
