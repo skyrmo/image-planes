@@ -1,10 +1,12 @@
 import { initWebGPU } from "./core/gpu";
+import { Renderer } from "./core/Renderer";
 
 export class ImagePlanes {
     private canvas: HTMLCanvasElement;
     private context: GPUCanvasContext;
     private device: GPUDevice;
     private format: GPUTextureFormat;
+    private renderer: Renderer;
 
     static async create(canvas: HTMLCanvasElement): Promise<ImagePlanes> {
         const { device, context, format } = await initWebGPU(canvas);
@@ -21,19 +23,8 @@ export class ImagePlanes {
         this.device = device;
         this.context = context;
         this.format = format;
+        this.renderer = new Renderer(device, context, format);
 
-        const encoder = device.createCommandEncoder();
-        const pass = encoder.beginRenderPass({
-            colorAttachments: [
-                {
-                    view: context.getCurrentTexture().createView(), // "draw onto the canvas"
-                    clearValue: [0, 0, 0.3, 0.3], // premultiplied red at 30%: r ≤ a!
-                    loadOp: "clear",
-                    storeOp: "store",
-                },
-            ],
-        });
-        pass.end();
-        device.queue.submit([encoder.finish()]);
+        this.renderer.render();
     }
 }
