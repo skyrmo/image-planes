@@ -1,4 +1,4 @@
-import type { PlaneSource } from "../types";
+import type { PlaneFit, PlaneSource } from "../types";
 import { rectFromElement } from "../utils";
 import type { PlaneRecord } from "./records";
 import type { Renderer } from "./Renderer";
@@ -17,7 +17,7 @@ export class PlaneManager {
         this.renderer = renderer;
     }
 
-    createRecord(element: HTMLElement, source: PlaneSource): PlaneRecord {
+    createRecord(element: HTMLElement, source: PlaneSource, fit: PlaneFit): PlaneRecord {
         const uniformBuffer = this.device.createBuffer({
             size: PLANE_UNIFORM_FLOATS * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -28,6 +28,10 @@ export class PlaneManager {
             bounds: rectFromElement(element),
             uniformBuffer,
             bindGroup: null, // set once the texture has loaded
+            texture: null,
+            texAspect: 1,
+            hasTexture: false,
+            fit,
         };
 
         this.records.add(record);
@@ -64,6 +68,17 @@ export class PlaneManager {
             s[1] = 1 - ((b.y + b.height) / vh) * 2;
             s[2] = (b.width / vw) * 2;
             s[3] = (b.height / vh) * 2;
+            const planeAspect = b.height > 0 ? b.width / b.height : 1;
+            if (record.fit === "fill") {
+                s[4] = 1;
+                s[5] = 1; // use the whole image, stretched
+            } else if (planeAspect > record.texAspect) {
+                s[4] = 1;
+                s[5] = record.texAspect / planeAspect; // frame is wider: crop top and bottom
+            } else {
+                s[4] = planeAspect / record.texAspect;
+                s[5] = 1; // frame is taller: crop the sides
+            }
             this.device.queue.writeBuffer(record.uniformBuffer, 0, s);
         }
     }

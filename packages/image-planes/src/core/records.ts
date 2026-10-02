@@ -8,4 +8,5 @@ export interface PlaneRecord {
     texture: GPUTexture | null;
     texAspect: number;
     hasTexture: boolean;
+    fit: "cover" | "fill";
 }

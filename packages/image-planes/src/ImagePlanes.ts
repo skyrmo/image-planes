@@ -48,7 +48,11 @@ export class ImagePlanes {
 
         if (!source) throw new Error("addPlane: pass a source, or use an <img> element");
 
-        const record = this.planeManager.createRecord(options.element, source);
+        const record = this.planeManager.createRecord(
+            options.element,
+            source,
+            options.fit ?? "cover",
+        );
 
         const ready = loadTexture(this.device, source).then(({ texture, aspect }) => {
             this.planeManager.attachTexture(record, texture, aspect);

@@ -5,7 +5,7 @@ body {
 }
 
 section {
-    height: 150vh;
+    height: 120vh;
     display: grid;
     place-items: center;
 }
@@ -16,6 +16,7 @@ img {
     object-fit: cover;
     opacity: 0.1;
     visibility: hidden;
+    opacity: 0;
 }
 
 canvas {
