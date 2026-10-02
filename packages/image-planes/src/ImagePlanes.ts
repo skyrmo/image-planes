@@ -1,5 +1,7 @@
 import { initWebGPU } from "./core/gpu";
+import { PlaneManager } from "./core/PlaneManager";
 import { Renderer } from "./core/Renderer";
+import type { AddPlaneOptions } from "./types/types";
 
 export class ImagePlanes {
     private canvas: HTMLCanvasElement;
@@ -7,6 +9,7 @@ export class ImagePlanes {
     private device: GPUDevice;
     private format: GPUTextureFormat;
     private renderer: Renderer;
+    private planeManager: PlaneManager;
 
     static async create(canvas: HTMLCanvasElement): Promise<ImagePlanes> {
         const { device, context, format } = await initWebGPU(canvas);
@@ -24,7 +27,12 @@ export class ImagePlanes {
         this.context = context;
         this.format = format;
         this.renderer = new Renderer(device, context, format);
+        this.planeManager = new PlaneManager(this.device, this.renderer);
+    }
 
-        this.renderer.render();
+    addPlane(options: AddPlaneOptions): void {
+        this.planeManager.createRecord(options.element);
+        this.planeManager.update();
+        this.renderer.render(this.planeManager.records);
     }
 }
