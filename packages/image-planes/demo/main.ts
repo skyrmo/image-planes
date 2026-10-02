@@ -1,3 +1,7 @@
 import "./style.css";
+import { ImagePlanes } from "../src/ImagePlanes";
 
-console.log("hello, world");
+async function main() {
+    await ImagePlanes.create(document.querySelector("canvas")!);
+}
+main();
