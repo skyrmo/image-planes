@@ -1,0 +1,22 @@
+{
+    "name": "image-planes",
+    "version": "0.1.0",
+    "description": "",
+    "main": "index.js",
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "devDependencies": {
+        "@webgpu/types": "^0.1.74",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.1",
+        "vite-plugin-dts": "^5.1.1"
+    },
+    "sideEffects": false,
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "typecheck": "tsc --noEmit"
+    }
+}
