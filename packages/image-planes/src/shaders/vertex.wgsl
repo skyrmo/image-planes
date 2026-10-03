@@ -8,8 +8,10 @@ fn vertexMain(@builtin(vertex_index) i: u32) -> VertexOutput {
     let rect = plane.rect;
 
     var out: VertexOutput;
+
     // Stretch the unit square to the rect: start at the corner, add a fraction of the size.
     out.position = vec4f(rect.xy + c * rect.zw, 0.0, 1.0);
+
     // Clip space y goes UP but images go DOWN, so flip y for the image coordinate.
     out.texcoord = vec2f(c.x, 1.0 - c.y);
     return out;

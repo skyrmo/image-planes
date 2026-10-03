@@ -8,11 +8,14 @@
         "types": ["vite/client", "@webgpu/types"],
         "strict": true,
         "verbatimModuleSyntax": true,
-        "useDefineForClassFields": true,
         "skipLibCheck": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "erasableSyntaxOnly": true,
+        // Same mapping as the alias in vite.config.ts: type-check against the library's source.
+        "paths": {
+            "image-planes": ["../packages/image-planes/src/index.ts"]
+        }
     },
-    "include": ["src"],
+    "include": ["**/*.ts"],
+    "exclude": ["node_modules", "vite.config.ts"]
 }

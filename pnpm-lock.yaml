@@ -23,6 +23,25 @@ importers:
         specifier: ^5.1.1
         version: 5.1.1(rolldown@1.2.12)(typescript@7.0.2)(vite@8.3.1)
 
+  playground:
+    dependencies:
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
+      image-planes:
+        specifier: workspace:*
+        version: link:../packages/image-planes
+    devDependencies:
+      '@webgpu/types':
+        specifier: ^0.1.74
+        version: 0.1.74
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.1
+        version: 8.3.1
+
 packages:
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -341,6 +360,9 @@ packages:
 
   glob-to-regexp@0.4.1:
     resolution: {integrity: sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==}
+
+  gsap@3.15.0:
+    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
@@ -761,6 +783,8 @@ snapshots:
     optional: true
 
   glob-to-regexp@0.4.1: {}
+
+  gsap@3.15.0: {}
 
   kolorist@1.8.0: {}
 

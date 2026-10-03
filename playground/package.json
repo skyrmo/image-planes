@@ -1,0 +1,18 @@
+{
+    "name": "playground",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "gsap": "^3.15.0",
+        "image-planes": "workspace:*"
+    },
+    "devDependencies": {
+        "@webgpu/types": "^0.1.74",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.1"
+    }
+}

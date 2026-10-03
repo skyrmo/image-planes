@@ -1,8 +1,9 @@
-import { configureCanvas, initWebGPU } from "./core/gpu";
-import { PlaneManager } from "./core/PlaneManager";
-import { Renderer } from "./core/Renderer";
-import { loadTexture } from "./core/texture";
-import type { AddPlaneOptions, BeforeRenderCallback } from "./types";
+import { configureCanvas, initWebGPU } from "./gpu";
+import { ImagePlane } from "./ImagePlane";
+import { PlaneManager } from "./PlaneManager";
+import { Renderer } from "./Renderer";
+import { loadTexture } from "./texture";
+import type { AddPlaneOptions, BeforeRenderCallback } from "../types";
 
 export class ImagePlanes {
     private canvas: HTMLCanvasElement;
@@ -21,10 +22,6 @@ export class ImagePlanes {
         return new ImagePlanes(canvas, device, context, format);
     }
 
-    private handleResize = () => {
-        configureCanvas(this.canvas, this.context, this.device, this.format);
-    };
-
     private constructor(
         canvas: HTMLCanvasElement,
         device: GPUDevice,
@@ -41,6 +38,10 @@ export class ImagePlanes {
         window.addEventListener("resize", this.handleResize);
     }
 
+    private handleResize = () => {
+        configureCanvas(this.canvas, this.context, this.device, this.format);
+    };
+
     addPlane(options: AddPlaneOptions) {
         const source =
             options.source ??
@@ -48,17 +49,20 @@ export class ImagePlanes {
 
         if (!source) throw new Error("addPlane: pass a source, or use an <img> element");
 
-        const record = this.planeManager.createRecord(
-            options.element,
-            source,
-            options.fit ?? "cover",
-        );
+        const record = this.planeManager.createRecord(options.element, options.fit ?? "cover");
 
         const ready = loadTexture(this.device, source).then(({ texture, aspect }) => {
+            // Removed before the image arrived: free the texture instead of attaching it.
+            if (!this.planeManager.has(record)) {
+                texture.destroy();
+                return;
+            }
             this.planeManager.attachTexture(record, texture, aspect);
         });
 
-        return { ready };
+        const plane = new ImagePlane(record, this.planeManager, ready);
+        record.handle = plane;
+        return plane;
     }
 
     start(): void {
@@ -70,6 +74,11 @@ export class ImagePlanes {
     stop(): void {
         if (this.rAF !== null) cancelAnimationFrame(this.rAF);
         this.rAF = null;
+    }
+
+    /** Every plane, in drawing order (last = on top). */
+    get planes(): ImagePlane[] {
+        return Array.from(this.planeManager.records, (record) => record.handle!);
     }
 
     /** Run `callback` every frame, before planes are measured. Returns an "unsubscribe" function. */

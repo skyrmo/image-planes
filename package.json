@@ -1,4 +1,9 @@
 {
     "name": "image-planes-repo",
-    "private": true
+    "private": true,
+    "scripts": {
+        "dev": "pnpm --filter playground dev",
+        "build": "pnpm --filter image-planes build",
+        "typecheck": "pnpm -r typecheck"
+    }
 }

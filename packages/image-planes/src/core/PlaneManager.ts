@@ -1,8 +1,7 @@
-import type { PlaneFit, PlaneSource } from "../types";
+import type { PlaneFit } from "../types";
 import { rectFromElement } from "../utils";
 import type { PlaneRecord } from "./records";
 import type { Renderer } from "./Renderer";
-import { loadTexture } from "./texture";
 
 export const PLANE_UNIFORM_FLOATS = 12;
 
@@ -17,7 +16,7 @@ export class PlaneManager {
         this.renderer = renderer;
     }
 
-    createRecord(element: HTMLElement, source: PlaneSource, fit: PlaneFit): PlaneRecord {
+    createRecord(element: HTMLElement, fit: PlaneFit): PlaneRecord {
         const uniformBuffer = this.device.createBuffer({
             size: PLANE_UNIFORM_FLOATS * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -27,21 +26,17 @@ export class PlaneManager {
             element,
             bounds: rectFromElement(element),
             uniformBuffer,
-            bindGroup: null, // set once the texture has loaded
+            bindGroup: null,
             texture: null,
             texAspect: 1,
             hasTexture: false,
             fit,
+            opacity: 1,
+            tracking: true,
+            handle: null,
         };
 
         this.records.add(record);
-
-        loadTexture(this.device, source)
-            .then(({ texture }) => {
-                record.bindGroup = this.renderer.createPlaneBindGroup(texture, uniformBuffer);
-            })
-            .catch(console.error);
-
         return record;
     }
 
@@ -57,11 +52,14 @@ export class PlaneManager {
         const vh = window.innerHeight;
         for (const record of this.records) {
             const b = record.bounds;
-            const r = record.element.getBoundingClientRect();
-            b.x = r.x;
-            b.y = r.y;
-            b.width = r.width;
-            b.height = r.height;
+            // Untracked planes: the user owns bounds, so leave them alone.
+            if (record.tracking) {
+                const r = record.element.getBoundingClientRect();
+                b.x = r.x;
+                b.y = r.y;
+                b.width = r.width;
+                b.height = r.height;
+            }
             const s = this.scratch;
             // CSS px → clip space.
             s[0] = (b.x / vw) * 2 - 1;
@@ -79,7 +77,24 @@ export class PlaneManager {
                 s[4] = planeAspect / record.texAspect;
                 s[5] = 1; // frame is taller: crop the sides
             }
+            s[9] = record.opacity;
             this.device.queue.writeBuffer(record.uniformBuffer, 0, s);
         }
+    }
+
+    // Planes draw in Set insertion order, later on top; re-adding moves it to the end.
+    bringToFront(record: PlaneRecord): void {
+        this.records.delete(record);
+        this.records.add(record);
+    }
+
+    remove(record: PlaneRecord): void {
+        if (!this.records.delete(record)) return;
+        record.texture?.destroy();
+        record.uniformBuffer.destroy();
+    }
+
+    has(record: PlaneRecord): boolean {
+        return this.records.has(record);
     }
 }

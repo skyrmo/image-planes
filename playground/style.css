@@ -14,8 +14,6 @@ img {
     width: 40vw;
     aspect-ratio: 3 / 4;
     object-fit: cover;
-    opacity: 0.1;
-    visibility: hidden;
     opacity: 0;
 }
 

@@ -1,4 +1,5 @@
 import type { Rect } from "../types";
+import type { ImagePlane } from "./ImagePlane";
 
 export interface PlaneRecord {
     element: HTMLElement;
@@ -9,4 +10,7 @@ export interface PlaneRecord {
     texAspect: number;
     hasTexture: boolean;
     fit: "cover" | "fill";
+    opacity: number;
+    tracking: boolean;
+    handle: ImagePlane | null;
 }
