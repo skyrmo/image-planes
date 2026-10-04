@@ -14,4 +14,6 @@ export interface PlaneRecord {
     tracking: boolean;
     handle: ImagePlane | null;
     lastUniform: Float32Array;
+    prevX: number;
+    prevY: number;
 }

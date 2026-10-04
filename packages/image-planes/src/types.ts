@@ -16,3 +16,8 @@ export type BeforeRenderCallback = (time: number, dt: number) => void;
 export type PlaneSource = string | Blob | HTMLImageElement | ImageBitmap;
 
 export type PlaneFit = "cover" | "fill";
+
+export interface ImagePlanesOptions {
+    /** 0 = follow exactly (default). */
+    damping?: number;
+}

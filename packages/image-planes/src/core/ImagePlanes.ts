@@ -3,7 +3,7 @@ import { ImagePlane } from "./ImagePlane";
 import { PlaneManager } from "./PlaneManager";
 import { Renderer } from "./Renderer";
 import { loadTexture } from "./texture";
-import type { AddPlaneOptions, BeforeRenderCallback } from "../types";
+import type { AddPlaneOptions, BeforeRenderCallback, ImagePlanesOptions } from "../types";
 
 export class ImagePlanes {
     private canvas: HTMLCanvasElement;
@@ -18,9 +18,12 @@ export class ImagePlanes {
     private hooks = new Set<BeforeRenderCallback>();
     private needRender = true;
 
-    static async create(canvas: HTMLCanvasElement): Promise<ImagePlanes> {
+    static async create(
+        canvas: HTMLCanvasElement,
+        options: ImagePlanesOptions = {},
+    ): Promise<ImagePlanes> {
         const { device, context, format } = await initWebGPU(canvas);
-        return new ImagePlanes(canvas, device, context, format);
+        return new ImagePlanes(canvas, device, context, format, options.damping ?? 0);
     }
 
     private constructor(
@@ -28,13 +31,14 @@ export class ImagePlanes {
         device: GPUDevice,
         context: GPUCanvasContext,
         format: GPUTextureFormat,
+        damping: number,
     ) {
         this.canvas = canvas;
         this.device = device;
         this.context = context;
         this.format = format;
         this.renderer = new Renderer(device, context, format);
-        this.planeManager = new PlaneManager(this.device, this.renderer);
+        this.planeManager = new PlaneManager(this.device, this.renderer, damping);
 
         window.addEventListener("resize", this.handleResize);
     }
@@ -102,7 +106,8 @@ export class ImagePlanes {
 
         for (const callback of this.hooks) callback(time, dt);
 
-        const dirty = this.planeManager.update();
+        const dtRatio = dt / (1000 / 60);
+        const dirty = this.planeManager.update(dtRatio);
         if (dirty || this.needRender) {
             this.renderer.render(this.planeManager.records);
             this.needRender = false;

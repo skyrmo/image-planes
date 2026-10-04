@@ -27,10 +27,12 @@ export class PlaneManager {
     private scratch = new Float32Array(PLANE_UNIFORM_FLOATS);
     readonly records = new Set<PlaneRecord>();
     private orderChanged = false;
+    private damping: number;
 
-    constructor(device: GPUDevice, renderer: Renderer) {
+    constructor(device: GPUDevice, renderer: Renderer, damping: number) {
         this.device = device;
         this.renderer = renderer;
+        this.damping = damping;
     }
 
     createRecord(element: HTMLElement, fit: PlaneFit): PlaneRecord {
@@ -39,9 +41,11 @@ export class PlaneManager {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
+        const bounds = rectFromElement(element);
+
         const record: PlaneRecord = {
             element,
-            bounds: rectFromElement(element),
+            bounds: bounds,
             uniformBuffer,
             bindGroup: null,
             texture: null,
@@ -52,6 +56,8 @@ export class PlaneManager {
             tracking: true,
             handle: null,
             lastUniform: new Float32Array(PLANE_UNIFORM_FLOATS).fill(NaN),
+            prevX: bounds.x,
+            prevY: bounds.y,
         };
 
         this.records.add(record);
@@ -65,7 +71,7 @@ export class PlaneManager {
         record.hasTexture = true;
     }
 
-    update(): boolean {
+    update(dtRatio: number): boolean {
         let dirty = this.orderChanged; // see 8.3
         this.orderChanged = false;
 
@@ -76,18 +82,51 @@ export class PlaneManager {
             // Untracked planes: the user owns bounds, so leave them alone.
             if (record.tracking) {
                 const r = record.element.getBoundingClientRect();
-                b.x = r.x;
-                b.y = r.y;
-                b.width = r.width;
-                b.height = r.height;
+                if (this.damping <= 0 || !record.hasTexture) {
+                    // Copy exactly. Also used before the image arrives, so a plane never
+                    // "slides in" from where its element was when it was created.
+                    b.x = r.x;
+                    b.y = r.y;
+                    b.width = r.width;
+                    b.height = r.height;
+                } else {
+                    // Close a fraction of the gap each frame. The pow() makes it the same speed at 60 or 120fps.
+                    const k = Math.max(1 - this.damping, 0.01);
+                    const a = 1 - Math.pow(1 - k, dtRatio);
+                    b.x += (r.x - b.x) * a;
+                    b.y += (r.y - b.y) * a;
+                    b.width += (r.width - b.width) * a;
+                    b.height += (r.height - b.height) * a;
+                    // Easing never quite arrives. Snap when close, or dirty checking never settles.
+                    if (
+                        Math.abs(r.x - b.x) < 0.05 &&
+                        Math.abs(r.y - b.y) < 0.05 &&
+                        Math.abs(r.width - b.width) < 0.05 &&
+                        Math.abs(r.height - b.height) < 0.05
+                    ) {
+                        b.x = r.x;
+                        b.y = r.y;
+                        b.width = r.width;
+                        b.height = r.height;
+                    }
+                }
             }
+
+            const perFrame = Math.max(dtRatio, 0.5); // floored so a tiny dt can't spike it
+            const vx = b.width > 0 ? (b.x - record.prevX) / b.width / perFrame : 0;
+            const vy = b.height > 0 ? (b.y - record.prevY) / b.height / perFrame : 0;
+            record.prevX = b.x;
+            record.prevY = b.y;
+
             const s = this.scratch;
             // CSS px → clip space.
             s[0] = (b.x / vw) * 2 - 1;
             s[1] = 1 - ((b.y + b.height) / vh) * 2;
             s[2] = (b.width / vw) * 2;
             s[3] = (b.height / vh) * 2;
+
             const planeAspect = b.height > 0 ? b.width / b.height : 1;
+
             if (record.fit === "fill") {
                 s[4] = 1;
                 s[5] = 1; // use the whole image, stretched
@@ -98,7 +137,12 @@ export class PlaneManager {
                 s[4] = planeAspect / record.texAspect;
                 s[5] = 1; // frame is taller: crop the sides
             }
+
+            s[6] = vx;
+            s[7] = vy;
+            s[8] = planeAspect; // width / height, already worked out for the cover fit
             s[9] = record.opacity;
+
             dirty =
                 writeIfChanged(this.device, record.uniformBuffer, record.lastUniform, s) || dirty;
         }

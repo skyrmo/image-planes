@@ -2,8 +2,14 @@ import "./style.css";
 // import gsap from "gsap";
 import { ImagePlanes } from "image-planes";
 
+import Lenis from "lenis";
+
 async function main() {
-    const scene = await ImagePlanes.create(document.querySelector("canvas")!);
+    const lenis = new Lenis({ autoRaf: false });
+    const scene = await ImagePlanes.create(document.querySelector("canvas")!, { damping: 0 });
+
+    scene.onBeforeRender((time) => lenis.raf(time));
+
     for (const img of document.querySelectorAll("img")) {
         const plane = scene.addPlane({ element: img });
         // img.addEventListener("click", () => {
