@@ -13,4 +13,5 @@ export interface PlaneRecord {
     opacity: number;
     tracking: boolean;
     handle: ImagePlane | null;
+    lastUniform: Float32Array;
 }

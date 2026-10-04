@@ -9,7 +9,12 @@ async function main() {
         // img.addEventListener("click", () => {
         //     plane.untrack();
         //     plane.opacity = 0.5;
-        //     gsap.to(plane.bounds, { x: 0, y: 0, width: innerWidth, height: innerHeight });
+        //     gsap.to(plane.bounds, {
+        //         x: 0,
+        //         y: 0,
+        //         width: innerWidth * 0.8,
+        //         height: innerHeight * 0.9,
+        //     });
         // });
     }
     scene.start();

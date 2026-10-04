@@ -16,6 +16,7 @@ export class ImagePlanes {
     private rAF: number | null = null;
     private lastTime: number | null = null;
     private hooks = new Set<BeforeRenderCallback>();
+    private needRender = true;
 
     static async create(canvas: HTMLCanvasElement): Promise<ImagePlanes> {
         const { device, context, format } = await initWebGPU(canvas);
@@ -40,6 +41,7 @@ export class ImagePlanes {
 
     private handleResize = () => {
         configureCanvas(this.canvas, this.context, this.device, this.format);
+        this.needRender = true;
     };
 
     addPlane(options: AddPlaneOptions) {
@@ -58,6 +60,7 @@ export class ImagePlanes {
                 return;
             }
             this.planeManager.attachTexture(record, texture, aspect);
+            this.needRender = true;
         });
 
         const plane = new ImagePlane(record, this.planeManager, ready);
@@ -68,6 +71,7 @@ export class ImagePlanes {
     start(): void {
         if (this.rAF !== null) return;
         this.lastTime = null;
+        this.needRender = true;
         this.rAF = requestAnimationFrame(this.loop);
     }
 
@@ -98,9 +102,11 @@ export class ImagePlanes {
 
         for (const callback of this.hooks) callback(time, dt);
 
-        this.planeManager.update();
-
-        this.renderer.render(this.planeManager.records);
+        const dirty = this.planeManager.update();
+        if (dirty || this.needRender) {
+            this.renderer.render(this.planeManager.records);
+            this.needRender = false;
+        }
     };
 
     destroy(): void {

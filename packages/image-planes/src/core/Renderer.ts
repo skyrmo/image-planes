@@ -86,6 +86,7 @@ export class Renderer {
     }
 
     render(records: Iterable<PlaneRecord>): void {
+        // console.count("draw");
         const encoder = this.device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
             colorAttachments: [

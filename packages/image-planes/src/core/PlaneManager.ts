@@ -5,11 +5,28 @@ import type { Renderer } from "./Renderer";
 
 export const PLANE_UNIFORM_FLOATS = 12;
 
+function writeIfChanged(
+    device: GPUDevice,
+    buffer: GPUBuffer,
+    last: Float32Array,
+    next: Float32Array,
+): boolean {
+    for (let i = 0; i < next.length; i++) {
+        if (last[i] !== next[i]) {
+            last.set(next); // remember what we're about to send
+            device.queue.writeBuffer(buffer, 0, next);
+            return true;
+        }
+    }
+    return false;
+}
+
 export class PlaneManager {
     private device: GPUDevice;
     private renderer: Renderer;
     private scratch = new Float32Array(PLANE_UNIFORM_FLOATS);
     readonly records = new Set<PlaneRecord>();
+    private orderChanged = false;
 
     constructor(device: GPUDevice, renderer: Renderer) {
         this.device = device;
@@ -34,6 +51,7 @@ export class PlaneManager {
             opacity: 1,
             tracking: true,
             handle: null,
+            lastUniform: new Float32Array(PLANE_UNIFORM_FLOATS).fill(NaN),
         };
 
         this.records.add(record);
@@ -47,7 +65,10 @@ export class PlaneManager {
         record.hasTexture = true;
     }
 
-    update(): void {
+    update(): boolean {
+        let dirty = this.orderChanged; // see 8.3
+        this.orderChanged = false;
+
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         for (const record of this.records) {
@@ -78,20 +99,24 @@ export class PlaneManager {
                 s[5] = 1; // frame is taller: crop the sides
             }
             s[9] = record.opacity;
-            this.device.queue.writeBuffer(record.uniformBuffer, 0, s);
+            dirty =
+                writeIfChanged(this.device, record.uniformBuffer, record.lastUniform, s) || dirty;
         }
+        return dirty;
     }
 
-    // Planes draw in Set insertion order, later on top; re-adding moves it to the end.
+    // Planes draw in Set insertion order, later on top.
     bringToFront(record: PlaneRecord): void {
         this.records.delete(record);
         this.records.add(record);
+        this.orderChanged = true;
     }
 
     remove(record: PlaneRecord): void {
         if (!this.records.delete(record)) return;
         record.texture?.destroy();
         record.uniformBuffer.destroy();
+        this.orderChanged = true;
     }
 
     has(record: PlaneRecord): boolean {
