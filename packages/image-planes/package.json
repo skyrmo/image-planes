@@ -1,21 +1,28 @@
 {
     "name": "image-planes",
     "version": "0.1.0",
-    "description": "",
-    "main": "index.js",
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
+    "description": "Draw WebGPU image planes over DOM elements, kept in sync with scroll and layout.",
+    "license": "MIT",
     "type": "module",
+    "sideEffects": false,
+    "files": [
+        "dist"
+    ],
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/image-planes.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build",
+        "typecheck": "tsc --noEmit"
+    },
     "devDependencies": {
+        "@typescript/typescript6": "^6.0.2",
         "@webgpu/types": "^0.1.74",
         "typescript": "^7.0.2",
         "vite": "^8.3.1",
         "vite-plugin-dts": "^5.1.1"
-    },
-    "sideEffects": false,
-    "scripts": {
-        "build": "vite build",
-        "typecheck": "tsc --noEmit"
     }
 }

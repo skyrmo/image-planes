@@ -11,7 +11,8 @@ async function main() {
     scene.onBeforeRender((time) => lenis.raf(time));
 
     for (const img of document.querySelectorAll("img")) {
-        const plane = scene.addPlane({ element: img });
+        // const plane = scene.addPlane({ element: img });
+        scene.addPlane({ element: img });
         // img.addEventListener("click", () => {
         //     plane.untrack();
         //     plane.opacity = 0.5;

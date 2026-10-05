@@ -8,8 +8,8 @@ export const PLANE_UNIFORM_FLOATS = 12;
 function writeIfChanged(
     device: GPUDevice,
     buffer: GPUBuffer,
-    last: Float32Array,
-    next: Float32Array,
+    last: Float32Array<ArrayBuffer>,
+    next: Float32Array<ArrayBuffer>,
 ): boolean {
     for (let i = 0; i < next.length; i++) {
         if (last[i] !== next[i]) {
