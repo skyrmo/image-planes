@@ -5,7 +5,9 @@ struct PlaneUniforms {
     velocity: vec2f,   //
     aspect: f32,       // width / height
     opacity: f32,      // range 0..1
-};  // 4+2+2+1+1 = 10 floats = 40 bytes, rounded up to 48
+    // Below this line, buildShader adds one f32 per effect setting.
+    // @settings
+};
 
 // What vertex shader sends to fragment shader.
 struct VertexOutput {

@@ -1,11 +1,10 @@
-@group(1) @binding(1) var<uniform> plane: PlaneUniforms;
-
 @vertex
 fn vertexMain(@builtin(vertex_index) i: u32) -> VertexOutput {
     var corner = array<vec2f, 4>(vec2f(0.0, 0.0), vec2f(1.0, 0.0), vec2f(0.0, 1.0), vec2f(1.0, 1.0));
     let c = corner[i];
 
-    let rect = plane.rect;
+    // Shape bricks (like stretch) can change the rect. With none, it's plane.rect.
+    let rect = applyShape(plane.rect);
 
     var out: VertexOutput;
 

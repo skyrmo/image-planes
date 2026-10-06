@@ -1,5 +1,6 @@
-import { VERTEX_SOURCE, FRAGMENT_SOURCE } from "../shaders/sources";
+// import { VERTEX_SOURCE, FRAGMENT_SOURCE } from "../shaders/sources";
 import type { PlaneRecord } from "./records";
+import { buildShader } from "./buildShader";
 
 export class Renderer {
     private device: GPUDevice;
@@ -44,14 +45,42 @@ export class Renderer {
             entries: [{ binding: 0, resource: sampler }],
         });
 
+        // this.pipeline = device.createRenderPipeline({
+        //     layout: this.pipelineLayout,
+        //     vertex: {
+        //         module: device.createShaderModule({ code: VERTEX_SOURCE }),
+        //         entryPoint: "vertexMain",
+        //     },
+        //     fragment: {
+        //         module: device.createShaderModule({ code: FRAGMENT_SOURCE }),
+        //         entryPoint: "fragmentMain",
+        //         targets: [
+        //             {
+        //                 format,
+        //                 blend: {
+        //                     color: {
+        //                         srcFactor: "one",
+        //                         dstFactor: "one-minus-src-alpha",
+        //                         operation: "add",
+        //                     },
+        //                     alpha: {
+        //                         srcFactor: "one",
+        //                         dstFactor: "one-minus-src-alpha",
+        //                         operation: "add",
+        //                     },
+        //                 },
+        //             },
+        //         ],
+        //     },
+        //     primitive: { topology: "triangle-strip" },
+        // });
+        // One shader text holding both vertexMain and fragmentMain.
+        const module = device.createShaderModule({ code: buildShader([]) });
         this.pipeline = device.createRenderPipeline({
             layout: this.pipelineLayout,
-            vertex: {
-                module: device.createShaderModule({ code: VERTEX_SOURCE }),
-                entryPoint: "vertexMain",
-            },
+            vertex: { module, entryPoint: "vertexMain" },
             fragment: {
-                module: device.createShaderModule({ code: FRAGMENT_SOURCE }),
+                module,
                 entryPoint: "fragmentMain",
                 targets: [
                     {

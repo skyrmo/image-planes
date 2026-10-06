@@ -21,3 +21,14 @@ export interface ImagePlanesOptions {
     /** 0 = follow exactly (default). */
     damping?: number;
 }
+
+export type BrickKind = "shape" | "uv" | "read" | "color";
+
+export type EffectSettings = Record<string, number>;
+
+export interface Brick {
+    name: string;
+    kind: BrickKind;
+    settings: EffectSettings;
+    wgsl: string;
+}
