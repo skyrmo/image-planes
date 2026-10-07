@@ -1,5 +1,4 @@
 import type { PlaneRecord } from "./records";
-import { buildShader } from "./buildShader";
 
 const BLEND: GPUBlendState = {
     color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },

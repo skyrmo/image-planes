@@ -1,6 +1,6 @@
-import type { Rect } from "../types";
 import type { PlaneManager } from "./PlaneManager";
 import type { PlaneRecord } from "./records";
+import type { EffectSettings, Rect } from "../types";
 
 export class ImagePlane {
     private record: PlaneRecord;
@@ -16,6 +16,10 @@ export class ImagePlane {
 
     get bounds(): Rect {
         return this.record.bounds;
+    }
+
+    get effects(): Record<string, EffectSettings> {
+        return this.record.effects;
     }
 
     get opacity(): number {

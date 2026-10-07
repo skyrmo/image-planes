@@ -1,9 +1,8 @@
-import type { PlaneFit } from "../types";
+import type { PlaneFit, Brick } from "../types";
 import { rectFromElement } from "../utils";
 import type { PlaneRecord } from "./records";
 import type { Renderer } from "./Renderer";
-
-export const PLANE_UNIFORM_FLOATS = 12;
+import { listSettings, PLANE_BASE_FLOATS, planeFloats } from "./settings";
 
 function writeIfChanged(
     device: GPUDevice,
@@ -24,7 +23,6 @@ function writeIfChanged(
 export class PlaneManager {
     private device: GPUDevice;
     private renderer: Renderer;
-    private scratch = new Float32Array(PLANE_UNIFORM_FLOATS);
     readonly records = new Set<PlaneRecord>();
     private orderChanged = false;
     private damping: number;
@@ -35,11 +33,20 @@ export class PlaneManager {
         this.damping = damping;
     }
 
-    createRecord(element: HTMLElement, fit: PlaneFit): PlaneRecord {
+    createRecord(element: HTMLElement, fit: PlaneFit, bricks: Brick[]): PlaneRecord {
+        const settings = listSettings(bricks);
+        const floats = planeFloats(settings.length);
+
         const uniformBuffer = this.device.createBuffer({
-            size: PLANE_UNIFORM_FLOATS * 4,
+            size: floats * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
+
+        // Each plane gets its own copy of every brick's settings.
+        const effects: PlaneRecord["effects"] = {};
+        for (const brick of bricks) {
+            effects[brick.name] = { ...brick.settings };
+        }
 
         const bounds = rectFromElement(element);
 
@@ -56,9 +63,12 @@ export class PlaneManager {
             opacity: 1,
             tracking: true,
             handle: null,
-            lastUniform: new Float32Array(PLANE_UNIFORM_FLOATS).fill(NaN),
+            scratch: new Float32Array(floats),
+            lastUniform: new Float32Array(floats).fill(NaN),
             prevX: bounds.x,
             prevY: bounds.y,
+            settings,
+            effects,
         };
 
         this.records.add(record);
@@ -73,11 +83,12 @@ export class PlaneManager {
     }
 
     update(dtRatio: number): boolean {
-        let dirty = this.orderChanged; // see 8.3
+        let dirty = this.orderChanged;
         this.orderChanged = false;
 
         const vw = window.innerWidth;
         const vh = window.innerHeight;
+
         for (const record of this.records) {
             const b = record.bounds;
             // Untracked planes: the user owns bounds, so leave them alone.
@@ -119,7 +130,7 @@ export class PlaneManager {
             record.prevX = b.x;
             record.prevY = b.y;
 
-            const s = this.scratch;
+            const s = record.scratch;
             // CSS px → clip space.
             s[0] = (b.x / vw) * 2 - 1;
             s[1] = 1 - ((b.y + b.height) / vh) * 2;
@@ -143,6 +154,12 @@ export class PlaneManager {
             s[7] = vy;
             s[8] = planeAspect; // width / height, already worked out for the cover fit
             s[9] = record.opacity;
+
+            // Effect settings, in the order listSettings() gave them.
+            for (let i = 0; i < record.settings.length; i++) {
+                const slot = record.settings[i];
+                s[PLANE_BASE_FLOATS + i] = record.effects[slot.brick][slot.setting];
+            }
 
             dirty =
                 writeIfChanged(this.device, record.uniformBuffer, record.lastUniform, s) || dirty;

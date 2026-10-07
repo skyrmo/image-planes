@@ -59,7 +59,11 @@ export class ImagePlanes {
         const bricks = options.effects ?? [];
         const code = buildShader(bricks);
 
-        const record = this.planeManager.createRecord(options.element, options.fit ?? "cover");
+        const record = this.planeManager.createRecord(
+            options.element,
+            options.fit ?? "cover",
+            bricks,
+        );
 
         const textureDone = loadTexture(this.device, source).then(({ texture, aspect }) => {
             // Removed before the image arrived: free the texture instead of attaching it.

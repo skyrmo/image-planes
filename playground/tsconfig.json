@@ -12,9 +12,9 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         // Same mapping as the alias in vite.config.ts: type-check against the library's source.
-        // "paths": {
-        //     "image-planes": ["../packages/image-planes/src/index.ts"]
-        // }
+        "paths": {
+            "image-planes": ["../packages/image-planes/src/index.ts"]
+        }
     },
     "include": ["**/*.ts"],
     "exclude": ["node_modules", "vite.config.ts"],
