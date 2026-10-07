@@ -16,4 +16,5 @@ export interface PlaneRecord {
     lastUniform: Float32Array<ArrayBuffer>;
     prevX: number;
     prevY: number;
+    pipeline: GPURenderPipeline | null;
 }

@@ -9,6 +9,8 @@ export interface AddPlaneOptions {
     element: HTMLElement; // DOM element
     source?: PlaneSource;
     fit?: PlaneFit;
+    /** Effect bricks, e.g. `[parallax(), grayscale()]`. Fixed once the plane is created. */
+    effects?: Brick[];
 }
 
 export type BeforeRenderCallback = (time: number, dt: number) => void;

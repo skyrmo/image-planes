@@ -3,6 +3,7 @@ import { ImagePlane } from "./ImagePlane";
 import { PlaneManager } from "./PlaneManager";
 import { Renderer } from "./Renderer";
 import { loadTexture } from "./texture";
+import { buildShader } from "./buildShader";
 import type { AddPlaneOptions, BeforeRenderCallback, ImagePlanesOptions } from "../types";
 
 export class ImagePlanes {
@@ -55,9 +56,12 @@ export class ImagePlanes {
 
         if (!source) throw new Error("addPlane: pass a source, or use an <img> element");
 
+        const bricks = options.effects ?? [];
+        const code = buildShader(bricks);
+
         const record = this.planeManager.createRecord(options.element, options.fit ?? "cover");
 
-        const ready = loadTexture(this.device, source).then(({ texture, aspect }) => {
+        const textureDone = loadTexture(this.device, source).then(({ texture, aspect }) => {
             // Removed before the image arrived: free the texture instead of attaching it.
             if (!this.planeManager.has(record)) {
                 texture.destroy();
@@ -66,6 +70,14 @@ export class ImagePlanes {
             this.planeManager.attachTexture(record, texture, aspect);
             this.needRender = true;
         });
+
+        const shaderDone = this.renderer.pipelineFor(code).then((pipeline) => {
+            if (!this.planeManager.has(record)) return; // removed while compiling
+            record.pipeline = pipeline;
+            this.needRender = true;
+        });
+
+        const ready = Promise.all([textureDone, shaderDone]).then(() => undefined);
 
         const plane = new ImagePlane(record, this.planeManager, ready);
         record.handle = plane;

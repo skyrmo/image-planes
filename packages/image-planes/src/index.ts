@@ -8,4 +8,7 @@ export type {
     PlaneSource,
     Rect,
     ImagePlanesOptions,
+    Brick,
+    BrickKind,
+    EffectSettings,
 } from "./types";

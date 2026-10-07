@@ -48,6 +48,7 @@ export class PlaneManager {
             bounds: bounds,
             uniformBuffer,
             bindGroup: null,
+            pipeline: null,
             texture: null,
             texAspect: 1,
             hasTexture: false,

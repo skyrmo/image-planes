@@ -1,20 +1,27 @@
-// import { VERTEX_SOURCE, FRAGMENT_SOURCE } from "../shaders/sources";
 import type { PlaneRecord } from "./records";
 import { buildShader } from "./buildShader";
+
+const BLEND: GPUBlendState = {
+    color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+    alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+};
 
 export class Renderer {
     private device: GPUDevice;
     private context: GPUCanvasContext;
-    private pipeline: GPURenderPipeline;
+    private format: GPUTextureFormat;
 
     private sceneLayout: GPUBindGroupLayout;
     private planeLayout: GPUBindGroupLayout;
     private pipelineLayout: GPUPipelineLayout;
     private sceneBindGroup: GPUBindGroup;
 
+    private pipelines = new Map<string, Promise<GPURenderPipeline>>();
+
     constructor(device: GPUDevice, context: GPUCanvasContext, format: GPUTextureFormat) {
         this.device = device;
         this.context = context;
+        this.format = format;
 
         const sampler: GPUSampler = device.createSampler({
             magFilter: "linear",
@@ -44,64 +51,25 @@ export class Renderer {
             layout: this.sceneLayout,
             entries: [{ binding: 0, resource: sampler }],
         });
+    }
 
-        // this.pipeline = device.createRenderPipeline({
-        //     layout: this.pipelineLayout,
-        //     vertex: {
-        //         module: device.createShaderModule({ code: VERTEX_SOURCE }),
-        //         entryPoint: "vertexMain",
-        //     },
-        //     fragment: {
-        //         module: device.createShaderModule({ code: FRAGMENT_SOURCE }),
-        //         entryPoint: "fragmentMain",
-        //         targets: [
-        //             {
-        //                 format,
-        //                 blend: {
-        //                     color: {
-        //                         srcFactor: "one",
-        //                         dstFactor: "one-minus-src-alpha",
-        //                         operation: "add",
-        //                     },
-        //                     alpha: {
-        //                         srcFactor: "one",
-        //                         dstFactor: "one-minus-src-alpha",
-        //                         operation: "add",
-        //                     },
-        //                 },
-        //             },
-        //         ],
-        //     },
-        //     primitive: { topology: "triangle-strip" },
-        // });
-        // One shader text holding both vertexMain and fragmentMain.
-        const module = device.createShaderModule({ code: buildShader([]) });
-        this.pipeline = device.createRenderPipeline({
-            layout: this.pipelineLayout,
-            vertex: { module, entryPoint: "vertexMain" },
-            fragment: {
-                module,
-                entryPoint: "fragmentMain",
-                targets: [
-                    {
-                        format,
-                        blend: {
-                            color: {
-                                srcFactor: "one",
-                                dstFactor: "one-minus-src-alpha",
-                                operation: "add",
-                            },
-                            alpha: {
-                                srcFactor: "one",
-                                dstFactor: "one-minus-src-alpha",
-                                operation: "add",
-                            },
-                        },
-                    },
-                ],
-            },
-            primitive: { topology: "triangle-strip" },
-        });
+    pipelineFor(code: string): Promise<GPURenderPipeline> {
+        let pipeline = this.pipelines.get(code);
+        if (!pipeline) {
+            const module = this.device.createShaderModule({ code });
+            pipeline = this.device.createRenderPipelineAsync({
+                layout: this.pipelineLayout,
+                vertex: { module, entryPoint: "vertexMain" },
+                fragment: {
+                    module,
+                    entryPoint: "fragmentMain",
+                    targets: [{ format: this.format, blend: BLEND }],
+                },
+                primitive: { topology: "triangle-strip" },
+            });
+            this.pipelines.set(code, pipeline);
+        }
+        return pipeline;
     }
 
     createPlaneBindGroup(texture: GPUTexture, uniformBuffer: GPUBuffer): GPUBindGroup {
@@ -127,12 +95,20 @@ export class Renderer {
                 },
             ],
         });
-        pass.setPipeline(this.pipeline);
         pass.setBindGroup(0, this.sceneBindGroup);
+
+        let current: GPURenderPipeline | null = null;
         for (const record of records) {
-            if (!record.bindGroup) continue;
+            if (!record.bindGroup || !record.pipeline) continue;
+
             const b = record.bounds;
             if (b.width <= 0 || b.height <= 0) continue;
+
+            if (record.pipeline !== current) {
+                pass.setPipeline(record.pipeline);
+                current = record.pipeline;
+            }
+
             pass.setBindGroup(1, record.bindGroup);
             pass.draw(4);
         }
