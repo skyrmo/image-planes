@@ -9,6 +9,7 @@ import {
     motionBlur,
     parallax,
     stretch,
+    roundedCorners,
 } from "../packages/image-planes/src/effects";
 
 // const invert: Brick = {
@@ -31,19 +32,26 @@ async function main() {
         autoRaf: false,
     });
 
-    const scene = await ImagePlanes.create(document.querySelector("canvas")!, { damping: 0.2 });
+    const scene = await ImagePlanes.create(document.querySelector("canvas")!, { damping: 0.6 });
 
     scene.onBeforeRender((time) => lenis.raf(time));
 
     for (const img of document.querySelectorAll("img")) {
         const plane = scene.addPlane({
             element: img,
-            effects: [stretch(), parallax(), chroma(), motionBlur(), grayscale({ amount: 0 })],
+
+            effects: [
+                stretch({ strength: 1.0 }),
+                parallax({ strength: 0.1, zoom: 1.05 }),
+                chroma({ strength: 0.75 }),
+                motionBlur({ strength: 1.2, trail: 1.1 }),
+                roundedCorners({ radius: 0.05 }),
+            ],
         });
         // Click a plane: fade to black and white. Click again: back to colour.
         img.addEventListener("click", () => {
-            const fx = plane.effects.grayscale;
-            gsap.to(fx, { amount: fx.amount > 0.5 ? 0 : 1, duration: 0.6 });
+            // const fx = plane.effects.grayscale;
+            // gsap.to(fx, { amount: fx.amount > 0.5 ? 0 : 1, duration: 0.6 });
         });
     }
     scene.start();

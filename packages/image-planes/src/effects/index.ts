@@ -4,3 +4,4 @@ export { grayscale, type GrayscaleOptions } from "./grayscale/grayscale";
 export { motionBlur, type MotionBlurOptions } from "./motionBlur/motionBlur";
 export { parallax, type ParallaxOptions } from "./parallax/parallax";
 export { stretch, type StretchOptions } from "./stretch/stretch";
+export { roundedCorners, type RoundedCornersOptions } from "./roundedCorners/roundedCorners";

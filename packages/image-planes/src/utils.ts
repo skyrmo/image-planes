@@ -10,7 +10,7 @@ export async function waitForImageReady(img: HTMLImageElement): Promise<void> {
     try {
         await img.decode();
     } catch {
-        // decode() can reject (e.g. image swapped mid-load). Fall back to the load event.
+        // decode() can reject. Fall back to the load event.
         await new Promise<void>((resolve) => {
             img.addEventListener("load", () => resolve(), { once: true });
             img.addEventListener("error", () => resolve(), { once: true });

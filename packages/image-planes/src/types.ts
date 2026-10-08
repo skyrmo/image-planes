@@ -24,9 +24,9 @@ export interface ImagePlanesOptions {
     damping?: number;
 }
 
-export type BrickKind = "shape" | "uv" | "read" | "color";
-
 export type EffectSettings = Record<string, number>;
+
+export type BrickKind = "shape" | "uv" | "read" | "color";
 
 export interface Brick {
     name: string;

@@ -1,5 +1,9 @@
 @fragment
 fn fragmentMain(v: VertexOutput) -> @location(0) vec4f {
+    // Tell the bricks where this pixel is.
+    pixel.planeUv = v.texcoord;
+    pixel.screen = v.position.xy;
+
     // Cover fit: shrink the 0..1 coordinates around the centre by fitScale.
     var uv = (v.texcoord - 0.5) * plane.fitScale + 0.5;
 
