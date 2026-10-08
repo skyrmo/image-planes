@@ -3,6 +3,14 @@ import gsap from "gsap";
 import Lenis from "lenis";
 import { ImagePlanes, type Brick } from "image-planes";
 
+import {
+    chroma,
+    grayscale,
+    motionBlur,
+    parallax,
+    stretch,
+} from "../packages/image-planes/src/effects";
+
 // const invert: Brick = {
 //     name: "invert",
 //     kind: "color",
@@ -14,17 +22,6 @@ import { ImagePlanes, type Brick } from "image-planes";
 // }`,
 // };
 
-const redden: Brick = {
-    name: "redden",
-    kind: "color",
-    settings: { amount: 0 },
-    wgsl: /* wgsl */ `
-fn main(color: vec4f) -> vec4f {
-    let red = vec4f(color.a, 0.0, 0.0, color.a); // pure red, premultiplied
-    return mix(color, red, my.amount);
-}`,
-};
-
 async function main() {
     const lenis = new Lenis({
         lerp: 0.1, // default is 0.1. Higher = closer to native.
@@ -34,14 +31,19 @@ async function main() {
         autoRaf: false,
     });
 
-    const scene = await ImagePlanes.create(document.querySelector("canvas")!, { damping: 0 });
+    const scene = await ImagePlanes.create(document.querySelector("canvas")!, { damping: 0.2 });
 
     scene.onBeforeRender((time) => lenis.raf(time));
 
     for (const img of document.querySelectorAll("img")) {
-        const plane = scene.addPlane({ element: img, effects: [redden] });
+        const plane = scene.addPlane({
+            element: img,
+            effects: [stretch(), parallax(), chroma(), motionBlur(), grayscale({ amount: 0 })],
+        });
+        // Click a plane: fade to black and white. Click again: back to colour.
         img.addEventListener("click", () => {
-            gsap.to(plane.effects.redden, { amount: plane.effects.redden.amount > 0.5 ? 0 : 1 });
+            const fx = plane.effects.grayscale;
+            gsap.to(fx, { amount: fx.amount > 0.5 ? 0 : 1, duration: 0.6 });
         });
     }
     scene.start();
