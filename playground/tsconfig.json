@@ -13,7 +13,8 @@
         "noUnusedParameters": true,
         // Same mapping as the alias in vite.config.ts: type-check against the library's source.
         "paths": {
-            "image-planes": ["../packages/image-planes/src/index.ts"]
+            "image-planes": ["../packages/image-planes/src/index.ts"],
+            "image-planes/effects": ["../packages/image-planes/src/effects/index.ts"]
         }
     },
     "include": ["**/*.ts"],

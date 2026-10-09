@@ -10,7 +10,7 @@ import {
     parallax,
     stretch,
     roundedCorners,
-} from "../packages/image-planes/src/effects";
+} from "image-planes/effects";
 
 // const invert: Brick = {
 //     name: "invert",
@@ -37,7 +37,7 @@ async function main() {
     scene.onBeforeRender((time) => lenis.raf(time));
 
     for (const img of document.querySelectorAll("img")) {
-        const plane = scene.addPlane({
+        scene.addPlane({
             element: img,
 
             effects: [

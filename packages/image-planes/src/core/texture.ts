@@ -1,6 +1,7 @@
 import type { PlaneSource } from "../types";
 import { waitForImageReady } from "../utils";
 
+/** Take an image in a viariety of sources and returns a bitmap image. */
 async function toBitmap(source: PlaneSource): Promise<ImageBitmap> {
     if (source instanceof ImageBitmap) return source;
 
@@ -18,6 +19,7 @@ async function toBitmap(source: PlaneSource): Promise<ImageBitmap> {
     return createImageBitmap(source); // Blob
 }
 
+/** recieves an image or image sourse and creates ansd returns a GPU Texture. */
 export async function loadTexture(device: GPUDevice, source: PlaneSource) {
     const bitmap = await toBitmap(source);
     const texture = device.createTexture({

@@ -12,6 +12,10 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/image-planes.js"
+        },
+        "./effects": {
+            "types": "./dist/effects/index.d.ts",
+            "import": "./dist/effects.js"
         }
     },
     "scripts": {
