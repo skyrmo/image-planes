@@ -1,6 +1,8 @@
 # image-planes
 
-Draw WebGPU image planes that track DOM elements with scroll and layout.
+Draw WebGPU image planes that track DOM elements with scroll and layout. Lightweight, with no runtime dependencies.
+
+Working on the library? See [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Install
 
