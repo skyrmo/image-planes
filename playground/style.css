@@ -1,26 +1,26 @@
 body {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 section {
-    height: 80vh;
-    display: grid;
-    place-items: center;
+  height: 80vh;
+  display: grid;
+  place-items: center;
 }
 
 img {
-    width: 40vw;
-    aspect-ratio: 3 / 4;
-    object-fit: cover;
-    opacity: 0;
+  width: 40vw;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  opacity: 0;
 }
 
 canvas {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
 }

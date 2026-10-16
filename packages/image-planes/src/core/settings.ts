@@ -3,9 +3,9 @@ import type { Brick } from "../types";
 export const PLANE_BASE_FLOATS = 10;
 
 export interface SettingSlot {
-    brick: string;
-    setting: string;
-    field: string;
+  brick: string;
+  setting: string;
+  field: string;
 }
 
 /**
@@ -14,16 +14,16 @@ export interface SettingSlot {
  * buffer. Because both use this one function, they can never disagree.
  */
 export function listSettings(bricks: Brick[]): SettingSlot[] {
-    const slots: SettingSlot[] = [];
-    for (const brick of bricks) {
-        for (const setting of Object.keys(brick.settings)) {
-            slots.push({ brick: brick.name, setting, field: `${brick.name}_${setting}` });
-        }
+  const slots: SettingSlot[] = [];
+  for (const brick of bricks) {
+    for (const setting of Object.keys(brick.settings)) {
+      slots.push({ brick: brick.name, setting, field: `${brick.name}_${setting}` });
     }
-    return slots;
+  }
+  return slots;
 }
 
 /** How many floats a plane's buffer needs: base + settings, rounded up to a whole 16-byte block. */
 export function planeFloats(settingCount: number): number {
-    return Math.ceil((PLANE_BASE_FLOATS + settingCount) / 4) * 4;
+  return Math.ceil((PLANE_BASE_FLOATS + settingCount) / 4) * 4;
 }

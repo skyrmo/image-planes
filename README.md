@@ -18,11 +18,11 @@ Add a fixed canvas over the whole page:
 
 ```css
 #planes {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
 }
 ```
 
@@ -32,11 +32,11 @@ Add a fixed canvas over the whole page:
 import { ImagePlanes } from "image-planes";
 
 const scene = await ImagePlanes.create(document.querySelector("#planes")!, {
-    damping: 0, // 0 = follow exactly. Closer to 1 = follow more slowly.
+  damping: 0, // 0 = follow exactly. Closer to 1 = follow more slowly.
 });
 
 for (const img of document.querySelectorAll("img")) {
-    scene.addPlane({ element: img }); // or { element, source: "/photo.jpg", fit: "fill" }
+  scene.addPlane({ element: img }); // or { element, source: "/photo.jpg", fit: "fill" }
 }
 
 scene.start();
@@ -74,13 +74,13 @@ const scene = await ImagePlanes.create(canvas, { damping: 0.8 });
 
 // Make the list once and share it between planes.
 const effects = [
-    parallax(), // all defaults
-    motionBlur({ strength: 0.5 }), // override one setting
-    grayscale({ amount: 0 }), // start in full colour
+  parallax(), // all defaults
+  motionBlur({ strength: 0.5 }), // override one setting
+  grayscale({ amount: 0 }), // start in full colour
 ];
 
 for (const img of document.querySelectorAll("img")) {
-    scene.addPlane({ element: img, effects });
+  scene.addPlane({ element: img, effects });
 }
 
 scene.start();
@@ -124,7 +124,7 @@ Changing one plane's settings doesn't affect the other planes, even when they sh
 
 ```ts
 const unsubscribe = scene.onBeforeRender((time, dt) => {
-    // runs before planes are measured, e.g. lenis.raf(time)
+  // runs before planes are measured, e.g. lenis.raf(time)
 });
 ```
 

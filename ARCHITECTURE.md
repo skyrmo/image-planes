@@ -76,8 +76,8 @@ Run these from the repo root:
 - TypeScript 7. `@typescript/typescript6` is also installed for `vite-plugin-dts`.
 - Vite 8 in library mode, vitest 5, and `@webgpu/types`.
 - The tsconfig is `strict`, with `verbatimModuleSyntax`, `erasableSyntaxOnly`, `noUnusedLocals` and `noUnusedParameters`. In practice:
-    - No `enum`s and no constructor parameter properties.
-    - Use `import type` for type-only imports.
+  - No `enum`s and no constructor parameter properties.
+  - Use `import type` for type-only imports.
 - `.wgsl` files are imported as strings with `?raw` (typed by `vite/client`). The build inlines them, so users get plain JavaScript.
 
 ### Build output
@@ -138,28 +138,28 @@ Run these from the repo root:
 ### `ImagePlanes.create(canvas, { damping })`
 
 1. `initWebGPU(canvas)`:
-    - Requests an adapter and a device.
-    - Logs uncaptured GPU errors as `[image-planes] …`, so they don't fail silently.
-    - Gets the `"webgpu"` context and picks `navigator.gpu.getPreferredCanvasFormat()`.
+   - Requests an adapter and a device.
+   - Logs uncaptured GPU errors as `[image-planes] …`, so they don't fail silently.
+   - Gets the `"webgpu"` context and picks `navigator.gpu.getPreferredCanvasFormat()`.
 2. `configureCanvas`:
-    - Sets the canvas size to `window.innerWidth/innerHeight × devicePixelRatio`.
-    - Configures the context with `alphaMode: "premultiplied"`.
+   - Sets the canvas size to `window.innerWidth/innerHeight × devicePixelRatio`.
+   - Configures the context with `alphaMode: "premultiplied"`.
 3. The private constructor:
-    - Creates the `Renderer` and the `PlaneManager` (with `damping`, which defaults to 0).
-    - Adds a window `resize` listener that re-runs `configureCanvas` and forces a render.
+   - Creates the `Renderer` and the `PlaneManager` (with `damping`, which defaults to 0).
+   - Adds a window `resize` listener that re-runs `configureCanvas` and forces a render.
 
 ### `scene.addPlane({ element, source?, fit?, effects? })`
 
 1. **Source.** `source` defaults to `element` when it's an `<img>`. Otherwise `addPlane` throws.
 2. **Shader text.** `buildShader(bricks)` writes the WGSL. It throws if a brick name appears twice.
 3. **Record.** `planeManager.createRecord(element, fit ?? "cover", bricks)`:
-    - Allocates the uniform buffer.
-    - Copies each brick's `settings` into `record.effects[brick.name]`, so every plane has its own copy.
-    - Measures the element.
-    - Adds the record to the `Set`. New planes go on top.
+   - Allocates the uniform buffer.
+   - Copies each brick's `settings` into `record.effects[brick.name]`, so every plane has its own copy.
+   - Measures the element.
+   - Adds the record to the `Set`. New planes go on top.
 4. **Two async jobs, in parallel.** Each one first checks `planeManager.has(record)`, in case the plane was removed meanwhile:
-    - `loadTexture(...)` → `attachTexture` (creates the plane's bind group) and sets `needRender`. If the plane was removed, it destroys the texture instead.
-    - `renderer.pipelineFor(code)` → sets `record.pipeline` and `needRender`.
+   - `loadTexture(...)` → `attachTexture` (creates the plane's bind group) and sets `needRender`. If the plane was removed, it destroys the texture instead.
+   - `renderer.pipelineFor(code)` → sets `record.pipeline` and `needRender`.
 5. **Handle.** It returns an `ImagePlane` handle. `plane.ready` resolves when both jobs finish. Until then, the renderer skips the plane.
 
 ### The frame loop (`ImagePlanes.loop`)
@@ -182,18 +182,18 @@ Run these from the repo root:
 For each record, in draw order:
 
 1. **Follow the element (tracked planes only).** Read `element.getBoundingClientRect()`.
-    - **Copy it exactly** when `damping <= 0`, or when the texture hasn't loaded yet. The second case stops a plane from "sliding in" from where its element was when it was created.
-    - **Otherwise ease towards it.** Each frame closes a fraction `a = 1 − (1 − k)^dtRatio` of the gap, where `k = max(1 − damping, 0.01)`. The `pow` makes the speed the same at 60 and 120 fps.
-    - **Snap** once every side is within 0.05 px. Easing never quite arrives, so without the snap the dirty check would never settle.
-    - **Untracked planes** (`untrack()`) are left alone: the user owns `bounds`.
+   - **Copy it exactly** when `damping <= 0`, or when the texture hasn't loaded yet. The second case stops a plane from "sliding in" from where its element was when it was created.
+   - **Otherwise ease towards it.** Each frame closes a fraction `a = 1 − (1 − k)^dtRatio` of the gap, where `k = max(1 − damping, 0.01)`. The `pow` makes the speed the same at 60 and 120 fps.
+   - **Snap** once every side is within 0.05 px. Easing never quite arrives, so without the snap the dirty check would never settle.
+   - **Untracked planes** (`untrack()`) are left alone: the user owns `bounds`.
 2. **Velocity.** `(bounds.x − prevX) / bounds.width / max(dtRatio, 0.5)`, and the same for y.
-    - The unit is **plane sizes per 60 fps frame**.
-    - The direction is CSS: +y is down.
-    - A plane with zero width or height gets 0.
+   - The unit is **plane sizes per 60 fps frame**.
+   - The direction is CSS: +y is down.
+   - A plane with zero width or height gets 0.
 3. **Pack the numbers** into `record.scratch`:
-    - Position, converted from CSS px to clip space (see §6).
-    - Cover-fit scale, velocity, aspect and opacity.
-    - Then every brick setting, in `listSettings` order.
+   - Position, converted from CSS px to clip space (see §6).
+   - Cover-fit scale, velocity, aspect and opacity.
+   - Then every brick setting, in `listSettings` order.
 4. **`writeIfChanged`.** Compare `scratch` with `lastUniform`, which starts as NaN so the first frame always writes. Call `queue.writeBuffer` only if a number differs, and return whether it did. **This comparison is the whole dirty-checking system.** Anything that should cause a redraw must either end up in the uniform numbers or set `needRender`/`orderChanged`.
 
 **`bounds` is mutated in place and never replaced.** The `ImagePlane.bounds` getter returns that same object, so `gsap.to(plane.bounds, …)` works. The same goes for `record.effects[name]` objects: `gsap.to(plane.effects.motionBlur, …)` works.
@@ -250,9 +250,9 @@ The layouts are created once in the `Renderer` constructor, and every pipeline s
 1. Begin a pass on the current canvas texture and clear it to `[0, 0, 0, 0]`, so the page shows through.
 2. Set group 0 once.
 3. For each record in `Set` order (later records are drawn on top):
-    - Skip it if it has no bind group or pipeline yet, or if its bounds have zero size.
-    - Call `setPipeline` only when the pipeline differs from the previous plane's.
-    - Set group 1 and call `draw(4)`.
+   - Skip it if it has no bind group or pipeline yet, or if its bounds have zero size.
+   - Call `setPipeline` only when the pipeline differs from the previous plane's.
+   - Set group 1 and call `draw(4)`.
 
 ### Colour: premultiplied alpha everywhere
 
@@ -267,10 +267,10 @@ The layouts are created once in the `Renderer` constructor, and every pipeline s
 
 ```ts
 interface Brick {
-    name: string; // valid WGSL identifier; also the plane.effects key
-    kind: "shape" | "uv" | "read" | "color";
-    settings: Record<string, number>; // starting values; each becomes one f32
-    wgsl: string; // exactly one function, `main`
+  name: string; // valid WGSL identifier; also the plane.effects key
+  kind: "shape" | "uv" | "read" | "color";
+  settings: Record<string, number>; // starting values; each becomes one f32
+  wgsl: string; // exactly one function, `main`
 }
 ```
 
@@ -314,14 +314,14 @@ With no bricks, every `apply*` function passes its value through unchanged, and 
 ### Inside the fixed shaders
 
 - **`vertex.wgsl`:**
-    - Picks one of 4 unit-square corners and runs `applyShape(plane.rect)`.
-    - Places the corner on the resulting rect.
-    - Sets `texcoord = (c.x, 1 − c.y)`, so (0, 0) is the top-left of the image.
+  - Picks one of 4 unit-square corners and runs `applyShape(plane.rect)`.
+  - Places the corner on the resulting rect.
+  - Sets `texcoord = (c.x, 1 − c.y)`, so (0, 0) is the top-left of the image.
 - **`fragment.wgsl`:**
-    1. Fills `pixel`.
-    2. Applies the cover fit: `uv = (texcoord − 0.5) * fitScale + 0.5`.
-    3. Runs `applyUv`, then `applyRead`, then `applyColor`.
-    4. Returns `color * plane.opacity`.
+  1. Fills `pixel`.
+  2. Applies the cover fit: `uv = (texcoord − 0.5) * fitScale + 0.5`.
+  3. Runs `applyUv`, then `applyRead`, then `applyColor`.
+  4. Returns `color * plane.opacity`.
 
 ### What a brick can use
 
@@ -363,18 +363,18 @@ Any object that matches `Brick` works. Users don't need to use `image-planes/eff
 Exported from `image-planes` (`src/index.ts`):
 
 - **`ImagePlanes`**
-    - `static create(canvas, { damping? })`
-    - `addPlane({ element, source?, fit?, effects? })` → `ImagePlane`
-    - `start()`, `stop()`, `destroy()`
-    - `onBeforeRender((time, dt) => void)` → an unsubscribe function
-    - `planes`: every handle, in draw order
+  - `static create(canvas, { damping? })`
+  - `addPlane({ element, source?, fit?, effects? })` → `ImagePlane`
+  - `start()`, `stop()`, `destroy()`
+  - `onBeforeRender((time, dt) => void)` → an unsubscribe function
+  - `planes`: every handle, in draw order
 - **`ImagePlane`**
-    - `ready` (Promise)
-    - `bounds`: a `Rect` in CSS px, mutated in place
-    - `opacity`
-    - `effects`
-    - `isTracking`, `track(element?)`, `untrack()`
-    - `bringToFront()`, `remove()`
+  - `ready` (Promise)
+  - `bounds`: a `Rect` in CSS px, mutated in place
+  - `opacity`
+  - `effects`
+  - `isTracking`, `track(element?)`, `untrack()`
+  - `bringToFront()`, `remove()`
 - **Functions:** `rectFromElement(el)` and `waitForImageReady(img)`.
 - **Types:** `AddPlaneOptions`, `Brick`, `BrickKind`, `EffectSettings`, `BeforeRenderCallback`, `PlaneFit` (`"cover" | "fill"`), `PlaneSource` (`string | Blob | HTMLImageElement | ImageBitmap`), `Rect`, `ImagePlanesOptions`.
 
@@ -387,34 +387,34 @@ Exported from `image-planes/effects`: `chroma`, `grayscale`, `motionBlur`, `para
 1. Create `src/effects/<name>/<name>.ts` and `src/effects/<name>/<name>.wgsl`.
 2. The `.ts` follows this template:
 
-    ```ts
-    import type { Brick } from "../../types";
-    import somethingShaderSource from "./something.wgsl?raw";
+   ```ts
+   import type { Brick } from "../../types";
+   import somethingShaderSource from "./something.wgsl?raw";
 
-    export interface SomethingOptions {
-        /** What it does. Default 1. */
-        strength?: number;
-    }
+   export interface SomethingOptions {
+     /** What it does. Default 1. */
+     strength?: number;
+   }
 
-    /** What it does. Kind: color. Image reads: 0. */
-    export function something({ strength = 1 }: SomethingOptions = {}): Brick {
-        return {
-            name: "something",
-            kind: "color",
-            settings: { strength },
-            wgsl: somethingShaderSource,
-        };
-    }
-    ```
+   /** What it does. Kind: color. Image reads: 0. */
+   export function something({ strength = 1 }: SomethingOptions = {}): Brick {
+     return {
+       name: "something",
+       kind: "color",
+       settings: { strength },
+       wgsl: somethingShaderSource,
+     };
+   }
+   ```
 
 3. Follow these rules:
-    - The function name, the brick's `name`, and the `plane.effects` key are the same word.
-    - Every option has a documented default.
-    - The doc comment states the kind and the image-read cost.
-    - The `.wgsl` file holds exactly one function, `main`, with the signature for its kind (§7).
-    - Fixed numbers are `const`s inside `main`.
-    - Read settings with `my.<setting>`.
-    - Keep colours premultiplied (§6).
+   - The function name, the brick's `name`, and the `plane.effects` key are the same word.
+   - Every option has a documented default.
+   - The doc comment states the kind and the image-read cost.
+   - The `.wgsl` file holds exactly one function, `main`, with the signature for its kind (§7).
+   - Fixed numbers are `const`s inside `main`.
+   - Read settings with `my.<setting>`.
+   - Keep colours premultiplied (§6).
 4. Export it from `src/effects/index.ts`.
 5. Add a row to the bricks table in `README.md` and in §7 of this file.
 6. Try it in `playground/main.ts`.
