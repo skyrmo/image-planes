@@ -5,8 +5,11 @@ fn main(uv: vec2f) -> vec2f {
     let zoomed = (uv - 0.5) / zoom + 0.5;
     // How much spare image there is above and below.
     let margin = (zoom - 1.0) / (2.0 * zoom);
-    // plane.rect.y moves smoothly from about -1 to 1 as the plane crosses the
-    // screen, so it works as a free "scroll position".
-    let pan = clamp(plane.rect.y * my.strength, -margin, margin);
+    // How far the plane is across the screen: -1 as its top edge enters at the
+    // bottom, 1 as its bottom edge leaves at the top.
+    let centreY = plane.rect.y + plane.rect.w * 0.5;
+    let progress = clamp(centreY / (1.0 + plane.rect.w * 0.5), -1.0, 1.0);
+    // strength is the share of the spare image to use (-1..1). The sign sets the direction.
+    let pan = progress * margin * clamp(my.strength, -1.0, 1.0);
     return vec2f(zoomed.x, zoomed.y + pan);
 }

@@ -4,11 +4,11 @@ import Lenis from "lenis";
 import { ImagePlanes } from "image-planes";
 
 import {
-  chroma,
+  // chroma,
   // grayscale,
   motionBlur,
   parallax,
-  stretch,
+  // stretch,
   roundedCorners,
 } from "image-planes/effects";
 
@@ -29,10 +29,17 @@ async function main() {
     scene.addPlane({
       element: img,
 
+      // effects: [
+      //   stretch({ strength: 1.0 }),
+      //   parallax({ strength: 0.1, zoom: 1.05 }),
+      //   chroma({ strength: 0.75 }),
+      //   motionBlur({ strength: 1.2, trail: 1.1 }),
+      //   roundedCorners({ radius: 0.05 }),
+      // ],
       effects: [
-        stretch({ strength: 1.0 }),
-        parallax({ strength: 0.1, zoom: 1.05 }),
-        chroma({ strength: 0.75 }),
+        // stretch({ strength: 0.5 }),
+        parallax({ strength: -0.5, zoom: 1.3 }),
+        // chroma({ strength: 0.25 }),
         motionBlur({ strength: 1.2, trail: 1.1 }),
         roundedCorners({ radius: 0.05 }),
       ],

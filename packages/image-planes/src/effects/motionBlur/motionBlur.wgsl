@@ -1,6 +1,7 @@
 fn main(uv: vec2f) -> vec4f {
     // How many reads to average. A constant, so every pixel loops the same number of times.
     const SAMPLES = 12;
+
     // Cap the smear. Past the image edge, reads repeat the edge pixel, so an
     // uncapped fast fling would streak it across the whole plane.
     const MAX_LENGTH = 0.88;

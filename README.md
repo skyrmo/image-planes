@@ -101,14 +101,14 @@ Changing one plane's settings doesn't affect the other planes, even when they sh
 
 ### Currently available bricks
 
-| Brick              | What it does                                    | Settings (default)              | Image reads   |
-| ------------------ | ----------------------------------------------- | ------------------------------- | ------------- |
-| `stretch()`        | Stretches the plane along its movement.         | `strength` (2), `max` (0.5)     | 0             |
-| `parallax()`       | Moves the image inside its frame as it scrolls. | `strength` (0.1), `zoom` (1.15) | 0             |
-| `chroma()`         | Splits red and blue apart along the movement.   | `strength` (0.5)                | 3 × previous  |
-| `motionBlur()`     | Smears the image along the movement.            | `strength` (1), `trail` (1)     | 12 × previous |
-| `grayscale()`      | Fades to black and white.                       | `amount` (1), `contrast` (1)    | 0             |
-| `roundedCorners()` | Rounds the plane's corners.                     | `radius` (0.1)                  | 0             |
+| Brick              | What it does                                                                             | Settings (default)                       | Image reads   |
+| ------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------- | ------------- |
+| `stretch()`        | Stretches the plane along its movement.                                                  | `strength` (2), `max` (0.5)              | 0             |
+| `parallax()`       | Moves the image inside its frame as it scrolls. Negative `strength` flips the direction. | `strength` (0.4, −1 to 1), `zoom` (1.15) | 0             |
+| `chroma()`         | Splits red and blue apart along the movement.                                            | `strength` (0.5)                         | 3 × previous  |
+| `motionBlur()`     | Smears the image along the movement.                                                     | `strength` (1), `trail` (1)              | 12 × previous |
+| `grayscale()`      | Fades to black and white.                                                                | `amount` (1), `contrast` (1)             | 0             |
+| `roundedCorners()` | Rounds the plane's corners.                                                              | `radius` (0.1)                           | 0             |
 
 ### Rules
 

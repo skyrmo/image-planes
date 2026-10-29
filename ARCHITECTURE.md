@@ -345,14 +345,14 @@ With no bricks, every `apply*` function passes its value through unchanged, and 
 
 ### Built-in bricks
 
-| Brick              | Kind  | Settings (default)              | Image reads   | Notes                                                                                        |
-| ------------------ | ----- | ------------------------------- | ------------- | -------------------------------------------------------------------------------------------- |
-| `stretch()`        | shape | `strength` (2), `max` (0.5)     | 0             | Longer along the movement, thinner across it, scaled around the centre.                      |
-| `parallax()`       | uv    | `strength` (0.1), `zoom` (1.15) | 0             | Zooms in to leave spare image, then pans by `plane.rect.y`. `zoom` is clamped to ≥ 1.        |
-| `chroma()`         | read  | `strength` (0.5)                | 3 × previous  | Red and blue offsets, capped at 0.05 uv. Clamped to alpha.                                   |
-| `motionBlur()`     | read  | `strength` (1), `trail` (1)     | 12 × previous | 12 samples, smear capped at 0.88 uv. `trail` 1 = behind, 0 = centred.                        |
-| `grayscale()`      | color | `amount` (1), `contrast` (1)    | 0             | Rec.601 luma. Contrast pivots on `0.5 × alpha`.                                              |
-| `roundedCorners()` | color | `radius` (0.1)                  | 0             | Rounded-box distance with `fwidth` anti-aliasing. Fixed to the frame (uses `pixel.planeUv`). |
+| Brick              | Kind  | Settings (default)              | Image reads   | Notes                                                                                                                                                                                                                                          |
+| ------------------ | ----- | ------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stretch()`        | shape | `strength` (2), `max` (0.5)     | 0             | Longer along the movement, thinner across it, scaled around the centre.                                                                                                                                                                        |
+| `parallax()`       | uv    | `strength` (0.4), `zoom` (1.15) | 0             | Zooms in to leave spare image, then pans through it with the plane's progress across the screen (−1 entering, 1 leaving). `strength` is the share of the spare image, clamped to −1..1; its sign sets the direction. `zoom` is clamped to ≥ 1. |
+| `chroma()`         | read  | `strength` (0.5)                | 3 × previous  | Red and blue offsets, capped at 0.05 uv. Clamped to alpha.                                                                                                                                                                                     |
+| `motionBlur()`     | read  | `strength` (1), `trail` (1)     | 12 × previous | 12 samples, smear capped at 0.88 uv. `trail` 1 = behind, 0 = centred.                                                                                                                                                                          |
+| `grayscale()`      | color | `amount` (1), `contrast` (1)    | 0             | Rec.601 luma. Contrast pivots on `0.5 × alpha`.                                                                                                                                                                                                |
+| `roundedCorners()` | color | `radius` (0.1)                  | 0             | Rounded-box distance with `fwidth` anti-aliasing. Fixed to the frame (uses `pixel.planeUv`).                                                                                                                                                   |
 
 ### Custom bricks
 
